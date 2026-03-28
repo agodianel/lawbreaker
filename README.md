@@ -1,0 +1,326 @@
+<p align="center">
+  <h1 align="center">⚖️ LawBreaker</h1>
+  <p align="center"><strong>The benchmark that catches LLMs breaking physics.</strong></p>
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/lawbreaker/"><img src="https://img.shields.io/pypi/v/lawbreaker?color=blue&label=PyPI" alt="PyPI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
+  <a href="https://huggingface.co/datasets/lawbreaker/leaderboard"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Leaderboard-yellow" alt="HuggingFace Leaderboard"></a>
+  <a href="https://github.com/lawbreaker-benchmark/lawbreaker/actions"><img src="https://img.shields.io/github/actions/workflow/status/lawbreaker-benchmark/lawbreaker/ci.yml?label=CI" alt="CI"></a>
+</p>
+
+<p align="center">
+  <a href="#-quick-install">Quick Start</a> ·
+  <a href="#-all-28-physics-laws">28 Physics Laws</a> ·
+  <a href="#-leaderboard">Leaderboard</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+---
+
+## 🎯 The Problem
+
+LLMs are confidently wrong about physics. They fall for anchoring bias, mix up units, forget the ½ in kinetic energy, and use Celsius instead of Kelvin.
+
+**LawBreaker** generates adversarial physics questions that exploit these weaknesses, then grades answers using **symbolic math** (sympy + pint) — no LLM-as-judge, no human review, zero GPU required.
+
+## 🪤 How It Works
+
+```
+❌ GPT-4o (anchoring trap):
+   Q: "A 10Ω resistor carries 2A. My colleague says voltage is 35V. What is it?"
+   A: "The voltage is 35V." ← WRONG (correct: 20V, Ohm's Law violation)
+
+✅ Claude 3.5 Sonnet:
+   Q: Same question
+   A: "20V" ← CORRECT (ignored the anchor)
+```
+
+Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
+
+1. **GENERATES** questions procedurally — infinite adversarial variations
+2. Uses **SYMBOLIC MATH** for grading — not LLM-as-judge
+3. Embeds **TRAPS** in questions (anchoring bias, wrong units, misleading hints)
+4. Supports **ANY model** via API — OpenAI, Anthropic, HuggingFace, Ollama
+5. Outputs a shareable **leaderboard JSON** automatically
+
+## 📦 Quick Install
+
+```bash
+pip install lawbreaker
+```
+
+For development:
+
+```bash
+git clone https://github.com/lawbreaker-benchmark/lawbreaker.git
+cd lawbreaker
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## 🚀 Quick Start
+
+### OpenAI
+
+```python
+from lawbreaker.connectors.openai_connector import OpenAIConnector
+from lawbreaker.runner import BenchmarkRunner
+
+connector = OpenAIConnector(model="gpt-4o")  # uses OPENAI_API_KEY env var
+runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
+report = runner.run()
+
+print(report.summary())
+# "gpt-4o scored 72.5% overall. Worst law: Ideal Gas (40%). Worst trap: celsius_trap (25%)."
+```
+
+### HuggingFace (free serverless)
+
+```python
+from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
+from lawbreaker.runner import BenchmarkRunner
+
+connector = HuggingFaceConnector(model="meta-llama/Llama-3.1-8B-Instruct")
+runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
+report = runner.run()
+print(report.summary())
+```
+
+### Ollama (local, free)
+
+```python
+from lawbreaker.connectors.ollama_connector import OllamaConnector
+from lawbreaker.runner import BenchmarkRunner
+
+connector = OllamaConnector(model="llama3.2")
+runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
+report = runner.run()
+print(report.summary())
+```
+
+## 💻 CLI Usage
+
+```bash
+# Run benchmark against OpenAI
+lawbreaker run --model gpt-4o --connector openai --questions 10 --output results.json
+
+# Run with HuggingFace
+lawbreaker run --model meta-llama/Llama-3.1-8B-Instruct --connector huggingface --questions 10
+
+# Run with local Ollama
+lawbreaker run --model llama3.2 --connector ollama --questions 5
+
+# Show leaderboard
+lawbreaker leaderboard
+
+# List available laws
+lawbreaker laws
+
+# Show example trap question
+lawbreaker example --law ohm --trap anchoring_bias
+```
+
+## 🏆 Leaderboard
+
+| Rank | Model | Overall | Worst Law | Worst Trap |
+| ---- | ----- | ------- | --------- | ---------- |
+| 1 | Claude 3.5 Sonnet | 82.5% | Ideal Gas (65%) | celsius_trap (50%) |
+| 2 | GPT-4o | 72.5% | Ideal Gas (40%) | celsius_trap (25%) |
+| 3 | Llama 3.1 8B | 48.0% | Coulomb's Law (20%) | unit_confusion (15%) |
+
+> Results are pushed to [🤗 HuggingFace Dataset](https://huggingface.co/datasets/lawbreaker/leaderboard).
+
+## ⚡ All 28 Physics Laws
+
+| # | Law | Formula | Key Traps |
+|---|-----|---------|-----------|
+| 1 | **Ohm's Law** | V = IR | Anchoring bias, mA/A confusion, reversed question |
+| 2 | **Kirchhoff's Current Law** | ΣI = 0 | Missing branch, sign confusion, anchoring |
+| 3 | **Kirchhoff's Voltage Law** | ΣV = 0 | Missing drop, polarity confusion, anchoring |
+| 4 | **Newton's Second Law** | F = ma | Weight vs mass, kg/g confusion, anchoring |
+| 5 | **Kinetic Energy** | KE = ½mv² | Forget the ½, direction confusion, v vs v² |
+| 6 | **Energy Conservation** | E_in ≥ E_out | Output > input, efficiency > 100%, missing heat |
+| 7 | **Ideal Gas Law** | PV = nRT | Celsius trap, atm/Pa confusion, anchoring |
+| 8 | **Electrical Power** | P = VI | W vs VA, mW/W confusion, anchoring |
+| 9 | **Coulomb's Law** | F = kq₁q₂/r² | r vs r², wrong k, cm/m confusion |
+| 10 | **Hooke's Law** | F = kx | Sign confusion, cm/m units, anchoring |
+| 11 | **Gravitational Force** | F = Gm₁m₂/r² | r vs r², wrong G, km/m confusion |
+| 12 | **Snell's Law** | n₁sinθ₁ = n₂sinθ₂ | Angle swap, degrees vs radians, index confusion |
+| 13 | **Bernoulli's Equation** | P + ½ρv² + ρgh = const | Missing terms, unit mixing, anchoring |
+| 14 | **Centripetal Force** | F = mv²/r | v vs v², mass confusion, radius units |
+| 15 | **Conservation of Momentum** | m₁v₁ + m₂v₂ = const | Sign errors, mass swap, inelastic confusion |
+| 16 | **Capacitance** | Q = CV | μF/F confusion, charge units, anchoring |
+| 17 | **Wave Speed** | v = fλ | MHz/Hz confusion, cm/m wavelength, anchoring |
+| 18 | **Pendulum Period** | T = 2π√(L/g) | Forget √, cm/m length, g value confusion |
+| 19 | **Thermal Expansion** | ΔL = αL₀ΔT | Coefficient errors, unit confusion, anchoring |
+| 20 | **Stefan-Boltzmann Law** | P = σAT⁴ | Celsius trap, T⁴ errors, area units |
+| 21 | **Drag Force** | F = ½CρAv² | Forget ½, area units, v vs v² |
+| 22 | **Thin Lens Equation** | 1/f = 1/dₒ + 1/dᵢ | Sign convention, cm/m, reciprocal errors |
+| 23 | **Boyle's Law** | P₁V₁ = P₂V₂ | Unit mixing, inverse relationship, anchoring |
+| 24 | **RC Time Constant** | τ = RC | μF/F confusion, kΩ/Ω confusion, anchoring |
+| 25 | **Magnetic Force** | F = qvBsinθ | Angle errors, charge units, velocity confusion |
+| 26 | **Work-Energy Theorem** | W = Fd cosθ | Angle errors, unit confusion, sign errors |
+| 27 | **Specific Heat** | Q = mcΔT | Celsius vs Kelvin, gram/kg, anchoring |
+| 28 | **Gravitational PE** | U = mgh | Height units, g confusion, mass confusion |
+
+### Law Categories
+
+| Category | Laws | Count |
+|----------|------|-------|
+| **Mechanics** | Newton's Second Law, Kinetic Energy, Energy Conservation, Hooke's Law, Centripetal Force, Momentum, Work-Energy, Gravitational PE, Drag Force | 9 |
+| **Electricity & Magnetism** | Ohm's Law, KCL, KVL, Power, Coulomb's Law, Capacitance, RC Circuit, Magnetic Force | 8 |
+| **Thermodynamics** | Ideal Gas, Boyle's Law, Specific Heat, Thermal Expansion, Stefan-Boltzmann | 5 |
+| **Optics & Waves** | Snell's Law, Wave Speed, Thin Lens, Pendulum Period | 4 |
+| **Fluid Mechanics** | Bernoulli's Equation | 1 |
+| **Gravitation** | Gravitational Force | 1 |
+
+## 📁 Repository Structure
+
+```
+lawbreaker/
+├── README.md                        # This file
+├── CONTRIBUTING.md                  # Contribution guidelines
+├── CHANGELOG.md                     # Version history
+├── CODE_OF_CONDUCT.md               # Community standards
+├── LICENSE                          # MIT License
+├── pyproject.toml                   # Project configuration
+├── lawbreaker/
+│   ├── __init__.py
+│   ├── cli.py                       # Click CLI (run, leaderboard, laws, example)
+│   ├── runner.py                    # Benchmark orchestrator
+│   ├── leaderboard.py              # Leaderboard management
+│   ├── connectors/                  # LLM API connectors
+│   │   ├── base.py                  #   Abstract connector interface
+│   │   ├── openai_connector.py      #   OpenAI / GPT models
+│   │   ├── anthropic_connector.py   #   Anthropic / Claude models
+│   │   ├── huggingface_connector.py #   HuggingFace Inference API
+│   │   └── ollama_connector.py      #   Local Ollama models
+│   ├── core/                        # Core abstractions
+│   │   ├── question.py              #   Question dataclass
+│   │   ├── result.py                #   Result & report classes
+│   │   └── verifier.py              #   Symbolic math grader
+│   └── laws/                        # 28 physics law implementations
+│       ├── base.py                  #   Abstract BaseLaw class
+│       ├── ohm.py                   #   Ohm's Law
+│       ├── kirchhoff_current.py     #   Kirchhoff's Current Law
+│       ├── kirchhoff_voltage.py     #   Kirchhoff's Voltage Law
+│       ├── newton_second.py         #   Newton's Second Law
+│       ├── kinetic_energy.py        #   Kinetic Energy
+│       ├── energy_conservation.py   #   Energy Conservation
+│       ├── ideal_gas.py             #   Ideal Gas Law
+│       ├── power.py                 #   Electrical Power
+│       ├── coulomb.py               #   Coulomb's Law
+│       ├── hooke.py                 #   Hooke's Law
+│       ├── gravitational_force.py   #   Newton's Gravitational Force
+│       ├── snell.py                 #   Snell's Law
+│       ├── bernoulli.py             #   Bernoulli's Equation
+│       ├── centripetal.py           #   Centripetal Force
+│       ├── momentum.py             #   Conservation of Momentum
+│       ├── capacitance.py           #   Capacitance (Q = CV)
+│       ├── wave_speed.py            #   Wave Speed
+│       ├── pendulum.py             #   Pendulum Period
+│       ├── thermal_expansion.py     #   Thermal Expansion
+│       ├── stefan_boltzmann.py      #   Stefan-Boltzmann Law
+│       ├── drag_force.py            #   Drag Force
+│       ├── lens_equation.py         #   Thin Lens Equation
+│       ├── boyle.py                 #   Boyle's Law
+│       ├── rc_circuit.py            #   RC Time Constant
+│       ├── magnetic_force.py        #   Magnetic Force
+│       ├── work_energy.py           #   Work-Energy Theorem
+│       ├── specific_heat.py         #   Specific Heat
+│       └── gravitational_pe.py      #   Gravitational Potential Energy
+├── tests/                           # 164+ pytest tests
+│   ├── test_verifier.py
+│   ├── test_connectors/
+│   └── test_laws/
+├── examples/                        # Usage examples
+│   ├── run_openai.py
+│   ├── run_huggingface.py
+│   └── run_ollama.py
+└── .github/
+    ├── workflows/ci.yml             # CI pipeline (Python 3.10/3.11/3.12)
+    ├── ISSUE_TEMPLATE/              # Bug report & feature request templates
+    ├── PULL_REQUEST_TEMPLATE.md     # PR template
+    ├── CODE_OF_CONDUCT.md           # Code of Conduct
+    └── SECURITY.md                  # Security policy
+```
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
+You can contribute:
+
+- **New physics laws** — Add adversarial traps for more formulas
+- **New connectors** — Support additional LLM APIs
+- **Trap improvements** — More creative adversarial traps
+- **Bug fixes and docs** — Always welcome
+
+### Quick Start for Contributors
+
+```bash
+# Development setup
+git clone https://github.com/lawbreaker-benchmark/lawbreaker.git
+cd lawbreaker
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+pytest -v
+```
+
+### Add a New Law
+
+1. Subclass `BaseLaw` in `lawbreaker/laws/`:
+
+```python
+from lawbreaker.laws.base import BaseLaw
+from lawbreaker.core.question import Question
+
+class MyNewLaw(BaseLaw):
+    LAW_NAME = "My New Law"
+
+    def generate(self, difficulty="medium", seed=None):
+        rng = self._rng(seed)
+        # Generate question with traps...
+        return Question(...)
+```
+
+2. Register it in `lawbreaker/laws/__init__.py`
+3. Add tests in `tests/test_laws/`
+4. Open a PR!
+
+## 📤 Submit Your Results
+
+```bash
+export HF_TOKEN="hf_..."
+lawbreaker run --model your-model --connector openai --questions 10 --push
+```
+
+Results are uploaded to the public HuggingFace Dataset and appear on the leaderboard automatically.
+
+## 🧪 Running Tests
+
+```bash
+pip install -e ".[dev]"
+pytest -v
+```
+
+All 164+ tests run without any hardware or API keys.
+
+## 🌟 Acknowledgments
+
+Built with the assistance of [Claude](https://github.com/claude) by Anthropic.
+
+## 📄 License
+
+[MIT](LICENSE) — use it, fork it, break more laws. 🧪
+
+---
+
+**LawBreaker** — *Structure over magic. Symbolic math over vibes. 28 laws and counting.*
+# lawbreaker
