@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lawbreaker"
+version = "0.1.0"
+description = "Physics Adversarial Benchmark for LLMs — catches models breaking physical laws"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "LawBreaker Contributors"},
+]
+keywords = ["benchmark", "llm", "physics", "adversarial", "testing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "sympy>=1.12",
+    "pint>=0.23",
+    "click>=8.1",
+    "openai>=1.0",
+    "anthropic>=0.20",
+    "huggingface_hub>=0.20",
+    "requests>=2.31",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
+
+[project.scripts]
+lawbreaker = "lawbreaker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/lawbreaker-benchmark/lawbreaker"
+Repository = "https://github.com/lawbreaker-benchmark/lawbreaker"
+Documentation = "https://github.com/lawbreaker-benchmark/lawbreaker#readme"
+
+[tool.setuptools.packages.find]
+include = ["lawbreaker*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
