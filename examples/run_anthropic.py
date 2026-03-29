@@ -1,7 +1,7 @@
-"""Example: Run LawBreaker benchmark against recent Anthropic Claude models.
+"""Example: Run LawBreaker benchmark against the 2 most recent Anthropic models.
 
-Benchmarks the two latest Claude model versions.  If a model returns
-an API error on a probe question, it is skipped immediately.
+Auto-discovers the latest Claude models via the Anthropic Models API,
+probes each, and benchmarks all that respond.
 
 Usage:
     export ANTHROPIC_API_KEY="sk-ant-..."
@@ -14,11 +14,6 @@ import time
 from lawbreaker.connectors.anthropic_connector import AnthropicConnector
 from lawbreaker.runner import BenchmarkRunner
 
-# Two most recent Claude versions
-MODELS = [
-    "claude-sonnet-4-20250514",
-    "claude-opus-4-20250514",
-]
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "anthropic")
 N_QUESTIONS = 5
@@ -36,14 +31,21 @@ def _probe_model(model: str) -> bool:
 
 
 def main():
-    """Benchmark recent Claude models."""
+    """Discover and benchmark the 2 most recent Anthropic models."""
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    for i, model in enumerate(MODELS):
+    print("Discovering most recent Anthropic Claude models...")
+    models = AnthropicConnector.discover_models(limit=2)
+    if not models:
+        print("No models found. Check your ANTHROPIC_API_KEY.")
+        return
+    print(f"Found {len(models)} model(s): {', '.join(models)}\n")
+
+    for i, model in enumerate(models):
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        print(f"[{i + 1}/{len(MODELS)}] Probing {model} ...")
+        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
         if not _probe_model(model):
             print(f"  !! {model} returned an error, skipping.\n")
             continue
@@ -65,7 +67,7 @@ def main():
         except Exception as exc:
             print(f"  !! Failed: {exc}\n")
 
-        if i < len(MODELS) - 1:
+        if i < len(models) - 1:
             time.sleep(2)
 
     print("Done.")

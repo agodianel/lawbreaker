@@ -27,6 +27,46 @@ class OpenAIConnector(BaseConnector):
         """Return the model identifier."""
         return self._model
 
+    @classmethod
+    def discover_models(
+        cls,
+        api_key: str | None = None,
+        limit: int = 2,
+    ) -> list[str]:
+        """Discover the most recent OpenAI GPT chat models.
+
+        Queries the OpenAI Models API, filters for GPT chat models,
+        and returns the *limit* most recently created ones.
+
+        Args:
+            api_key: Optional API key; falls back to ``OPENAI_API_KEY``.
+            limit: Number of most-recent models to return (default 2).
+
+        Returns:
+            List of model ID strings, newest first.
+        """
+        from openai import OpenAI
+
+        key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        client = OpenAI(api_key=key)
+
+        all_models = list(client.models.list())
+
+        # Keep only gpt-* chat models, exclude instruct/audio/realtime/search
+        skip = {"instruct", "audio", "realtime", "search", "transcribe", "tts", "dall-e", "whisper", "embedding"}
+        chat_models = []
+        for m in all_models:
+            mid = m.id.lower()
+            if not mid.startswith("gpt-"):
+                continue
+            if any(s in mid for s in skip):
+                continue
+            chat_models.append(m)
+
+        # Sort by creation date descending, take the most recent
+        chat_models.sort(key=lambda m: m.created, reverse=True)
+        return [m.id for m in chat_models[:limit]]
+
     def query(self, question_text: str, system_prompt: str = SYSTEM_PROMPT) -> str:
         """Query the OpenAI chat completions API.
 

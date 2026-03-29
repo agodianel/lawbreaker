@@ -1,7 +1,7 @@
-"""Example: Run LawBreaker benchmark against recent OpenAI models.
+"""Example: Run LawBreaker benchmark against the 2 most recent OpenAI models.
 
-Benchmarks the two latest GPT model versions.  If a model returns
-an API error on a probe question, it is skipped immediately.
+Auto-discovers the latest GPT chat models via the OpenAI Models API,
+probes each, and benchmarks all that respond.
 
 Usage:
     export OPENAI_API_KEY="sk-..."
@@ -14,11 +14,6 @@ import time
 from lawbreaker.connectors.openai_connector import OpenAIConnector
 from lawbreaker.runner import BenchmarkRunner
 
-# Two most recent OpenAI versions
-MODELS = [
-    "gpt-4o",
-    "gpt-4.1",
-]
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "openai")
 N_QUESTIONS = 5
@@ -36,14 +31,21 @@ def _probe_model(model: str) -> bool:
 
 
 def main():
-    """Benchmark recent OpenAI models."""
+    """Discover and benchmark the 2 most recent OpenAI models."""
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    for i, model in enumerate(MODELS):
+    print("Discovering most recent OpenAI GPT models...")
+    models = OpenAIConnector.discover_models(limit=2)
+    if not models:
+        print("No models found. Check your OPENAI_API_KEY.")
+        return
+    print(f"Found {len(models)} model(s): {', '.join(models)}\n")
+
+    for i, model in enumerate(models):
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        print(f"[{i + 1}/{len(MODELS)}] Probing {model} ...")
+        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
         if not _probe_model(model):
             print(f"  !! {model} returned an error, skipping.\n")
             continue
@@ -65,7 +67,7 @@ def main():
         except Exception as exc:
             print(f"  !! Failed: {exc}\n")
 
-        if i < len(MODELS) - 1:
+        if i < len(models) - 1:
             time.sleep(2)
 
     print("Done.")
