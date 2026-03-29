@@ -145,8 +145,11 @@ lawbreaker models
 # Run benchmark against ALL discovered HuggingFace models
 lawbreaker run-all --questions 5 --delay 5 --output-dir results
 
-# Show leaderboard
+# Show leaderboard from HuggingFace
 lawbreaker leaderboard
+
+# Show leaderboard from local results
+lawbreaker leaderboard --local results/
 
 # List available laws
 lawbreaker laws

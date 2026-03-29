@@ -100,15 +100,22 @@ def run(model, connector, questions, output, seed, laws, delay, push):
 
 
 @main.command()
-def leaderboard():
-    """Show the public HuggingFace leaderboard."""
+@click.option("--local", default=None, type=str, help="Load results from a local directory instead of HuggingFace")
+def leaderboard(local):
+    """Show the benchmark leaderboard (from HuggingFace or local files)."""
     from lawbreaker.leaderboard import Leaderboard
 
     lb = Leaderboard()
-    console.print("\n[bold cyan]Fetching leaderboard...[/bold cyan]\n")
-    reports = lb.pull_results()
+
+    if local:
+        console.print(f"\n[bold cyan]Loading local results from {local}...[/bold cyan]\n")
+        reports = lb.load_local_results(local)
+    else:
+        console.print("\n[bold cyan]Fetching leaderboard from HuggingFace...[/bold cyan]\n")
+        reports = lb.pull_results()
+
     if not reports:
-        console.print("[yellow]No results found on leaderboard yet.[/yellow]")
+        console.print("[yellow]No results found.[/yellow]")
         return
     console.print(lb.render_table(reports))
 

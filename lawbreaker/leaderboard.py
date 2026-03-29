@@ -49,16 +49,23 @@ class Leaderboard:
         except Exception as exc:
             raise RuntimeError(f"Failed to push result: {exc}") from exc
 
-    def pull_results(self) -> list[BenchmarkReport]:
+    def pull_results(self, token: str | None = None) -> list[BenchmarkReport]:
         """Download all result JSONs from the HuggingFace Dataset.
+
+        Args:
+            token: Optional HuggingFace token (needed for private datasets).
+                   Falls back to ``HF_TOKEN`` env var.
 
         Returns:
             List of ``BenchmarkReport`` objects parsed from JSON.
         """
+        import os
+
+        token = token or os.environ.get("HF_TOKEN", "")
         try:
             from huggingface_hub import HfApi
 
-            api = HfApi()
+            api = HfApi(token=token or None)
             files = api.list_repo_files(self.DATASET_REPO, repo_type="dataset")
             json_files = [f for f in files if f.startswith("results/") and f.endswith(".json")]
 
@@ -66,7 +73,8 @@ class Leaderboard:
             for path in json_files:
                 url = f"https://huggingface.co/datasets/{self.DATASET_REPO}/resolve/main/{path}"
                 import requests
-                resp = requests.get(url, timeout=30)
+                headers = {"Authorization": f"Bearer {token}"} if token else {}
+                resp = requests.get(url, headers=headers, timeout=30)
                 resp.raise_for_status()
                 data = resp.json()
                 report = BenchmarkReport(
@@ -84,6 +92,44 @@ class Leaderboard:
             return reports
         except Exception:
             return []
+
+    @staticmethod
+    def load_local_results(results_dir: str = "results") -> list[BenchmarkReport]:
+        """Load benchmark results from local JSON files.
+
+        Args:
+            results_dir: Root directory containing connector sub-folders.
+
+        Returns:
+            List of ``BenchmarkReport`` objects.
+        """
+        import glob
+        import os
+
+        reports: list[BenchmarkReport] = []
+        if not os.path.isdir(results_dir):
+            return reports
+
+        for path in sorted(glob.glob(os.path.join(results_dir, "**", "*.json"), recursive=True)):
+            if os.path.basename(path).startswith("_"):
+                continue
+            try:
+                with open(path) as fh:
+                    data = json.load(fh)
+                reports.append(BenchmarkReport(
+                    model_name=data.get("model_name", ""),
+                    timestamp=data.get("timestamp", ""),
+                    total_questions=data.get("total_questions", 0),
+                    total_passed=data.get("total_passed", 0),
+                    overall_score=data.get("overall_score", 0.0),
+                    per_law_scores=data.get("per_law_scores", {}),
+                    per_trap_scores=data.get("per_trap_scores", {}),
+                    worst_law=data.get("worst_law", ""),
+                    worst_trap=data.get("worst_trap", ""),
+                ))
+            except (json.JSONDecodeError, OSError):
+                continue
+        return reports
 
     def render_table(self, reports: list[BenchmarkReport]) -> str:
         """Render a markdown leaderboard table sorted by overall score.
