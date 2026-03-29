@@ -27,6 +27,35 @@ class GeminiConnector(BaseConnector):
         """Return the model identifier."""
         return self._model
 
+    @classmethod
+    def discover_models(cls, api_key: str | None = None) -> list[str]:
+        """Return available Gemini model names that support content generation.
+
+        Args:
+            api_key: Optional API key; falls back to ``GEMINI_API_KEY``.
+
+        Returns:
+            Sorted list of model name strings (e.g. ``'gemini-2.0-flash'``).
+        """
+        from google import genai
+
+        key = api_key or os.environ.get("GEMINI_API_KEY", "")
+        client = genai.Client(api_key=key)
+        models: list[str] = []
+        for m in client.models.list():
+            # Only models that support generateContent
+            if not m.supported_actions or "generateContent" not in m.supported_actions:
+                continue
+            name = m.name or ""
+            # Strip the "models/" prefix if present
+            if name.startswith("models/"):
+                name = name[len("models/"):]
+            # Keep only gemini models, skip tuned/legacy
+            if not name.startswith("gemini"):
+                continue
+            models.append(name)
+        return sorted(models)
+
     def query(self, question_text: str, system_prompt: str = SYSTEM_PROMPT) -> str:
         """Query the Google Gemini API.
 
