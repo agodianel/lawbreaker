@@ -43,12 +43,20 @@ class HuggingFaceConnector(BaseConnector):
         """
         try:
             from huggingface_hub import InferenceClient
-            client = InferenceClient(model=self._model, token=self._token)
-            response = client.text_generation(
-                f"{system_prompt}\n\nQuestion: {question_text}\nAnswer:",
-                max_new_tokens=100,
+            client = InferenceClient(
+                model=self._model,
+                token=self._token,
+            )
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"{question_text}\nAnswer:"}
+            ]
+            response = client.chat_completion(
+                messages=messages,
+                max_tokens=100,
                 temperature=0.01,
             )
-            return response.strip()
+            return response.choices[0].message.content.strip()
         except Exception as exc:
             raise RuntimeError(f"HuggingFace API error: {exc}") from exc

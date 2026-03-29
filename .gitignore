@@ -40,3 +40,4 @@ Thumbs.db
 *.tar.gz
 *.whl
 Instructions1.md
+.env
