@@ -19,9 +19,12 @@ def main():
     print(report.summary())
     print(report.to_markdown_table())
 
-    with open("results_ollama.json", "w") as f:
+    # Save results to connector-specific directory
+    import os
+    os.makedirs("results/ollama", exist_ok=True)
+    with open("results/ollama/llama3.2.json", "w") as f:
         f.write(report.to_json())
-    print("\nResults saved to results_ollama.json")
+    print("\nResults saved to results/ollama/llama3.2.json")
 
 
 if __name__ == "__main__":

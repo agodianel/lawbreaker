@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-03-29
+
+### Added
+- **Google Gemini connector** (`gemini_connector.py`) — supports Gemini 2.0 Flash and all Gemini models via `GEMINI_API_KEY`
+- **`run-all` CLI command** — auto-discovers and benchmarks ALL available HuggingFace inference models with leaderboard comparison
+- **`models` CLI command** — discovers and lists warm HuggingFace inference models available for benchmarking
+- **`--delay` flag** for `run` command — configurable sleep between API calls to avoid rate limiting
+- **Per-connector results directories** — results now saved to `results/openai/`, `results/anthropic/`, `results/gemini/`, `results/huggingface/`, `results/ollama/`
+- **Model discovery** — `HuggingFaceConnector.discover_models()` finds canonical instruct/chat models with warm inference
+- **Example scripts** for Anthropic Claude (`run_anthropic.py`) and Google Gemini (`run_gemini.py`)
+
+### Changed
+- Updated Anthropic connector default model to `claude-sonnet-4-20250514`
+- CLI `--connector` option now accepts `gemini` in addition to existing connectors
+- All example scripts updated to save results in connector-specific subdirectories
+- `run-all` command now saves results to `results/<connector>/` subdirectory
+
 ## [0.1.0] - 2025-01-01
 
 ### Added

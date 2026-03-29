@@ -32,6 +32,7 @@ dependencies = [
     "openai>=1.0",
     "anthropic>=0.20",
     "huggingface_hub>=0.20",
+    "google-genai>=1.0",
     "requests>=2.31",
     "rich>=13.0",
 ]

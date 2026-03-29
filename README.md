@@ -45,7 +45,7 @@ Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
 1. **GENERATES** questions procedurally — infinite adversarial variations
 2. Uses **SYMBOLIC MATH** for grading — not LLM-as-judge
 3. Embeds **TRAPS** in questions (anchoring bias, wrong units, misleading hints)
-4. Supports **ANY model** via API — OpenAI, Anthropic, HuggingFace, Ollama
+4. Supports **ANY model** via API — OpenAI, Anthropic, Google Gemini, HuggingFace, Ollama
 5. Outputs a shareable **leaderboard JSON** automatically
 
 ## 📦 Quick Install
@@ -80,6 +80,30 @@ print(report.summary())
 # "gpt-4o scored 72.5% overall. Worst law: Ideal Gas (40%). Worst trap: celsius_trap (25%)."
 ```
 
+### Anthropic Claude
+
+```python
+from lawbreaker.connectors.anthropic_connector import AnthropicConnector
+from lawbreaker.runner import BenchmarkRunner
+
+connector = AnthropicConnector(model="claude-sonnet-4-20250514")  # uses ANTHROPIC_API_KEY env var
+runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
+report = runner.run()
+print(report.summary())
+```
+
+### Google Gemini
+
+```python
+from lawbreaker.connectors.gemini_connector import GeminiConnector
+from lawbreaker.runner import BenchmarkRunner
+
+connector = GeminiConnector(model="gemini-2.0-flash")  # uses GEMINI_API_KEY env var
+runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
+report = runner.run()
+print(report.summary())
+```
+
 ### HuggingFace (free serverless)
 
 ```python
@@ -108,13 +132,25 @@ print(report.summary())
 
 ```bash
 # Run benchmark against OpenAI
-lawbreaker run --model gpt-4o --connector openai --questions 10 --output results.json
+lawbreaker run --model gpt-4o --connector openai --questions 10 --output results/openai/gpt-4o.json
 
-# Run with HuggingFace
-lawbreaker run --model meta-llama/Llama-3.1-8B-Instruct --connector huggingface --questions 10
+# Run with Anthropic Claude
+lawbreaker run --model claude-sonnet-4-20250514 --connector anthropic --questions 10 --output results/anthropic/claude-sonnet-4.json
+
+# Run with Google Gemini
+lawbreaker run --model gemini-2.0-flash --connector gemini --questions 10 --output results/gemini/gemini-2.0-flash.json
+
+# Run with HuggingFace (with rate-limit delay)
+lawbreaker run --model meta-llama/Llama-3.1-8B-Instruct --connector huggingface --questions 10 --delay 5
 
 # Run with local Ollama
 lawbreaker run --model llama3.2 --connector ollama --questions 5
+
+# Discover available HuggingFace models
+lawbreaker models
+
+# Run benchmark against ALL discovered HuggingFace models
+lawbreaker run-all --questions 5 --delay 5 --output-dir results
 
 # Show leaderboard
 lawbreaker leaderboard
@@ -124,6 +160,27 @@ lawbreaker laws
 
 # Show example trap question
 lawbreaker example --law ohm --trap anchoring_bias
+```
+
+### Results Directory Structure
+
+Results are organized by connector/provider:
+
+```
+results/
+├── openai/
+│   ├── gpt-4o.json
+│   └── gpt-4o-mini.json
+├── anthropic/
+│   └── claude-sonnet-4.json
+├── gemini/
+│   └── gemini-2.0-flash.json
+├── huggingface/
+│   ├── meta-llama__Llama-3.1-8B-Instruct.json
+│   ├── Qwen__Qwen2.5-72B-Instruct.json
+│   └── _leaderboard.json
+└── ollama/
+    └── llama3.2.json
 ```
 
 ## 🏆 Leaderboard
@@ -192,13 +249,14 @@ lawbreaker/
 ├── pyproject.toml                   # Project configuration
 ├── lawbreaker/
 │   ├── __init__.py
-│   ├── cli.py                       # Click CLI (run, leaderboard, laws, example)
+│   ├── cli.py                       # Click CLI (run, run-all, models, leaderboard, laws, example)
 │   ├── runner.py                    # Benchmark orchestrator
 │   ├── leaderboard.py              # Leaderboard management
 │   ├── connectors/                  # LLM API connectors
 │   │   ├── base.py                  #   Abstract connector interface
 │   │   ├── openai_connector.py      #   OpenAI / GPT models
 │   │   ├── anthropic_connector.py   #   Anthropic / Claude models
+│   │   ├── gemini_connector.py      #   Google Gemini models
 │   │   ├── huggingface_connector.py #   HuggingFace Inference API
 │   │   └── ollama_connector.py      #   Local Ollama models
 │   ├── core/                        # Core abstractions
@@ -241,10 +299,12 @@ lawbreaker/
 │   └── test_laws/
 ├── examples/                        # Usage examples
 │   ├── run_openai.py
+│   ├── run_anthropic.py
+│   ├── run_gemini.py
 │   ├── run_huggingface.py
 │   └── run_ollama.py
 └── .github/
-    ├── workflows/ci.yml             # CI pipeline (Python 3.10/3.11/3.12)
+    ├── workflows/ci.yml             # CI pipeline (Python 3.10/3.11/3.12/3.13)
     ├── ISSUE_TEMPLATE/              # Bug report & feature request templates
     ├── PULL_REQUEST_TEMPLATE.md     # PR template
     ├── CODE_OF_CONDUCT.md           # Code of Conduct

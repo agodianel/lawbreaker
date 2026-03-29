@@ -19,10 +19,12 @@ def main():
     print(report.summary())
     print(report.to_markdown_table())
 
-    # Save results
-    with open("results_openai.json", "w") as f:
+    # Save results to connector-specific directory
+    import os
+    os.makedirs("results/openai", exist_ok=True)
+    with open("results/openai/gpt-4o.json", "w") as f:
         f.write(report.to_json())
-    print("\nResults saved to results_openai.json")
+    print("\nResults saved to results/openai/gpt-4o.json")
 
 
 if __name__ == "__main__":

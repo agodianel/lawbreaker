@@ -12,7 +12,7 @@ from lawbreaker.connectors.base import BaseConnector, SYSTEM_PROMPT
 class AnthropicConnector(BaseConnector):
     """Connector for Anthropic models (Claude 3.5 Sonnet, etc.)."""
 
-    def __init__(self, model: str = "claude-3-5-sonnet-20241022", api_key: str | None = None):
+    def __init__(self, model: str = "claude-sonnet-4-20250514", api_key: str | None = None):
         """Initialise the Anthropic connector.
 
         Args:

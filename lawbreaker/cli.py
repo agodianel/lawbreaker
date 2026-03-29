@@ -31,7 +31,7 @@ def main():
 @main.command()
 @click.option("--model", required=True, help="Model name/identifier")
 @click.option("--connector", required=True,
-              type=click.Choice(["openai", "anthropic", "huggingface", "ollama"]))
+              type=click.Choice(["openai", "anthropic", "huggingface", "ollama", "gemini"]))
 @click.option("--questions", default=10, help="Questions per law")
 @click.option("--output", default=None, help="Output JSON file path")
 @click.option("--seed", default=None, type=int, help="Random seed")
@@ -81,6 +81,8 @@ def run(model, connector, questions, output, seed, laws, delay, push):
     console.print(f"\n[bold]{report.summary()}[/bold]\n")
 
     if output:
+        import os
+        os.makedirs(os.path.dirname(output) if os.path.dirname(output) else ".", exist_ok=True)
         with open(output, "w") as f:
             f.write(report.to_json())
         console.print(f"[green]Results saved to {output}[/green]")
@@ -142,12 +144,15 @@ def list_models():
 
 @main.command("run-all")
 @click.option("--questions", default=5, help="Questions per law")
-@click.option("--output-dir", default="results", help="Directory for result files")
+@click.option("--output-dir", default="results", help="Base directory for result files")
 @click.option("--seed", default=42, type=int, help="Random seed")
 @click.option("--laws", default=None, help="Comma-separated law names")
 @click.option("--delay", default=5.0, type=float, help="Seconds between API calls (rate-limit avoidance)")
+@click.option("--connector", default="huggingface",
+              type=click.Choice(["openai", "anthropic", "huggingface", "ollama", "gemini"]),
+              help="Connector type for model discovery (default: huggingface)")
 @click.option("--push/--no-push", default=False, help="Push to HF leaderboard")
-def run_all(questions, output_dir, seed, laws, delay, push):
+def run_all(questions, output_dir, seed, laws, delay, connector, push):
     """Run benchmark against ALL available HuggingFace inference models."""
     import os
     from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
@@ -164,7 +169,9 @@ def run_all(questions, output_dir, seed, laws, delay, push):
         console.print(f"  {i:2d}. {m}")
     console.print()
 
-    os.makedirs(output_dir, exist_ok=True)
+    # Use connector-specific subdirectory
+    connector_dir = os.path.join(output_dir, connector)
+    os.makedirs(connector_dir, exist_ok=True)
     law_list = laws.split(",") if laws else None
     summaries = []
 
@@ -200,7 +207,7 @@ def run_all(questions, output_dir, seed, laws, delay, push):
 
         # Save individual result
         safe_name = model.replace("/", "__")
-        out_path = os.path.join(output_dir, f"{safe_name}.json")
+        out_path = os.path.join(connector_dir, f"{safe_name}.json")
         with open(out_path, "w") as f:
             f.write(report.to_json())
         console.print(f"  [dim]Saved → {out_path}[/dim]")
@@ -254,7 +261,7 @@ def run_all(questions, output_dir, seed, laws, delay, push):
     console.print(comp_table)
 
     # Save combined summary
-    summary_path = os.path.join(output_dir, "_leaderboard.json")
+    summary_path = os.path.join(connector_dir, "_leaderboard.json")
     with open(summary_path, "w") as f:
         json.dump(summaries, f, indent=2)
     console.print(f"\n[green]Leaderboard saved to {summary_path}[/green]\n")
@@ -286,7 +293,7 @@ def _make_connector(connector_type: str, model: str):
     """Factory to create the appropriate connector instance.
 
     Args:
-        connector_type: One of 'openai', 'anthropic', 'huggingface', 'ollama'.
+        connector_type: One of 'openai', 'anthropic', 'huggingface', 'ollama', 'gemini'.
         model: Model identifier string.
 
     Returns:
@@ -304,6 +311,9 @@ def _make_connector(connector_type: str, model: str):
     elif connector_type == "ollama":
         from lawbreaker.connectors.ollama_connector import OllamaConnector
         return OllamaConnector(model=model)
+    elif connector_type == "gemini":
+        from lawbreaker.connectors.gemini_connector import GeminiConnector
+        return GeminiConnector(model=model)
     else:
         console.print(f"[red]Unknown connector: {connector_type}[/red]")
         sys.exit(1)

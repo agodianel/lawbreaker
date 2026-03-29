@@ -21,9 +21,12 @@ def main():
     print(report.summary())
     print(report.to_markdown_table())
 
-    with open("results_huggingface.json", "w") as f:
+    # Save results to connector-specific directory
+    import os
+    os.makedirs("results/huggingface", exist_ok=True)
+    with open("results/huggingface/Llama-3.1-8B-Instruct.json", "w") as f:
         f.write(report.to_json())
-    print("\nResults saved to results_huggingface.json")
+    print("\nResults saved to results/huggingface/Llama-3.1-8B-Instruct.json")
 
 
 if __name__ == "__main__":

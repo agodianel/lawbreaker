@@ -33,6 +33,7 @@ htmlcov/
 Thumbs.db
 
 # Results & outputs
+results/
 *.json
 !pyproject.toml
 
