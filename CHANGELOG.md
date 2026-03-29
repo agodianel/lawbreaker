@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-29
+
+### Fixed
+- **Critical answer extraction rewrite** — `extract_numeric()` now uses a two-phase strategy:
+  1. If the first line starts with a number, extract from that line only (handles "341.114 J\nWait, let me recalculate...")
+  2. Otherwise extract the **last** number from the full response (handles "KE = ½ × 8.75 × (8.83)² = 341.114 J")
+  - Previous extractor grabbed the **first** number, which was often an input parameter (mass, voltage) rather than the computed answer
+  - 97 answer corrections across 16 models, 0 regressions
+- **Overflow guard** in `extract_numeric()` — large exponents (e.g. Avogadro's number) no longer crash with `int too large to convert to float`
+- **Resilient runner** — `law.generate()`, `extract_numeric()`, and `verify_numeric()` failures are caught and recorded as errors instead of aborting the entire benchmark
+- **OpenAI `max_completion_tokens`** — GPT-5.x models reject the deprecated `max_tokens` parameter; switched to `max_completion_tokens`
+- **OpenAI discovery** — de-duplicates dated model snapshots (e.g. `gpt-5.4-mini-2026-03-17` when `gpt-5.4-mini` exists), filters codex/pro non-chat models
+
+### Added
+- **Leaderboard table** in README with results from 16 models across 4 providers
+- **Re-verification script** — all stored result JSON files re-graded with the fixed extractor
+
 ## [0.4.0] - 2026-03-29
 
 ### Added
