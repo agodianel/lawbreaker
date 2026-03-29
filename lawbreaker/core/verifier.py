@@ -84,7 +84,24 @@ class PhysicsVerifier:
 
         text = llm_response.strip()
 
-        # --- Strategy: extract the LAST number, since LLMs put the answer last ---
+        # --- Strategy ---
+        # 1. If the first line looks like a direct answer (starts with a number),
+        #    extract from that line only — handles "341.114 J" or "0.1308 s"
+        #    even when the model rambles afterwards.
+        # 2. Otherwise, extract the LAST number from the full text, since LLMs
+        #    that show working put the final answer at the end.
+
+        first_line = text.split("\n")[0].strip()
+        # A "direct answer" line starts with an optional sign/approx, then a digit
+        if re.match(r"^[≈≅~]?\s*\**[+-]?\d", first_line):
+            result = self._extract_from_text(first_line)
+            if result is not None:
+                return result
+
+        return self._extract_from_text(text)
+
+    def _extract_from_text(self, text: str) -> Optional[float]:
+        """Extract the last numeric value from a text block."""
 
         # Helper: find all scientific notation matches (×10^N style)
         sci_matches = list(re.finditer(
