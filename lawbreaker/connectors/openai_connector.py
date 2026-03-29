@@ -46,6 +46,7 @@ class OpenAIConnector(BaseConnector):
             List of model ID strings, newest first.
         """
         from openai import OpenAI
+        import re
 
         key = api_key or os.environ.get("OPENAI_API_KEY", "")
         client = OpenAI(api_key=key)
@@ -65,7 +66,21 @@ class OpenAIConnector(BaseConnector):
 
         # Sort by creation date descending, take the most recent
         chat_models.sort(key=lambda m: m.created, reverse=True)
-        return [m.id for m in chat_models[:limit]]
+
+        # De-duplicate: skip dated snapshots (e.g. gpt-4o-2024-08-06)
+        # when the non-dated alias (gpt-4o) is also present
+        _dated = re.compile(r"-\d{4}-\d{2}-\d{2}$")
+        ids = [m.id for m in chat_models]
+        alias_set = {mid for mid in ids if not _dated.search(mid)}
+        deduped: list[str] = []
+        for mid in ids:
+            base = _dated.sub("", mid)
+            # Keep if it's the alias itself, or no alias exists
+            if mid in alias_set or base not in alias_set:
+                if mid not in deduped:
+                    deduped.append(mid)
+
+        return deduped[:limit]
 
     def query(self, question_text: str, system_prompt: str = SYSTEM_PROMPT) -> str:
         """Query the OpenAI chat completions API.

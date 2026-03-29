@@ -26,7 +26,8 @@ def _probe_model(model: str) -> bool:
         connector = OpenAIConnector(model=model)
         connector.query("What is 1+1?")
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"  !! {model} probe failed: {exc}")
         return False
 
 
@@ -35,22 +36,33 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
     print("Discovering most recent OpenAI GPT models...")
-    models = OpenAIConnector.discover_models(limit=2)
-    if not models:
+    candidates = OpenAIConnector.discover_models(limit=10)
+    if not candidates:
         print("No models found. Check your OPENAI_API_KEY.")
         return
-    print(f"Found {len(models)} model(s): {', '.join(models)}\n")
+    print(f"Found {len(candidates)} candidate(s), probing for working models...\n")
+
+    # Probe candidates until we find enough working models
+    models: list[str] = []
+    for model in candidates:
+        print(f"  Probing {model} ...")
+        if _probe_model(model):
+            print(f"  ✓ {model} is accessible")
+            models.append(model)
+            if len(models) >= 2:
+                break
+        print()
+
+    if not models:
+        print("\nNo accessible models found.")
+        return
+    print(f"\n{len(models)} working model(s): {', '.join(models)}\n")
 
     for i, model in enumerate(models):
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
-        if not _probe_model(model):
-            print(f"  !! {model} returned an error, skipping.\n")
-            continue
-
-        print(f"  Benchmarking {model} ...")
+        print(f"[{i + 1}/{len(models)}] Benchmarking {model} ...")
         try:
             connector = OpenAIConnector(model=model)
             runner = BenchmarkRunner(
