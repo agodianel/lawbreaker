@@ -36,8 +36,9 @@ def main():
 @click.option("--output", default=None, help="Output JSON file path")
 @click.option("--seed", default=None, type=int, help="Random seed")
 @click.option("--laws", default=None, help="Comma-separated law names")
+@click.option("--delay", default=0.0, type=float, help="Seconds between API calls (rate-limit avoidance)")
 @click.option("--push/--no-push", default=False, help="Push to HF leaderboard")
-def run(model, connector, questions, output, seed, laws, push):
+def run(model, connector, questions, output, seed, laws, delay, push):
     """Run the adversarial physics benchmark against an LLM."""
     from lawbreaker.runner import BenchmarkRunner
 
@@ -45,7 +46,8 @@ def run(model, connector, questions, output, seed, laws, push):
     law_list = laws.split(",") if laws else None
 
     runner = BenchmarkRunner(
-        connector=conn, laws=law_list, n_questions=questions, seed=seed
+        connector=conn, laws=law_list, n_questions=questions, seed=seed,
+        delay=delay,
     )
     console.print(f"\n[bold cyan]🧪 LawBreaker Benchmark[/bold cyan]")
     console.print(f"   Model: [green]{model}[/green]")
@@ -118,6 +120,144 @@ def list_laws():
     for name, cls in LAW_REGISTRY.items():
         table.add_row(name, cls.LAW_NAME)
     console.print(table)
+
+
+@main.command("models")
+def list_models():
+    """Discover available HuggingFace inference models."""
+    from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
+
+    console.print("\n[bold cyan]🔍 Discovering HuggingFace inference models...[/bold cyan]\n")
+    models = HuggingFaceConnector.discover_models()
+    if not models:
+        console.print("[yellow]No models found. Check your HF_TOKEN.[/yellow]")
+        return
+    table = Table(title=f"🤖 Available Models ({len(models)})")
+    table.add_column("#", style="dim", justify="right")
+    table.add_column("Model", style="cyan")
+    for i, m in enumerate(models, 1):
+        table.add_row(str(i), m)
+    console.print(table)
+
+
+@main.command("run-all")
+@click.option("--questions", default=5, help="Questions per law")
+@click.option("--output-dir", default="results", help="Directory for result files")
+@click.option("--seed", default=42, type=int, help="Random seed")
+@click.option("--laws", default=None, help="Comma-separated law names")
+@click.option("--delay", default=5.0, type=float, help="Seconds between API calls (rate-limit avoidance)")
+@click.option("--push/--no-push", default=False, help="Push to HF leaderboard")
+def run_all(questions, output_dir, seed, laws, delay, push):
+    """Run benchmark against ALL available HuggingFace inference models."""
+    import os
+    from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
+    from lawbreaker.runner import BenchmarkRunner
+
+    console.print("\n[bold cyan]🔍 Discovering HuggingFace inference models...[/bold cyan]")
+    models = HuggingFaceConnector.discover_models()
+    if not models:
+        console.print("[red]No models found. Check your HF_TOKEN.[/red]")
+        sys.exit(1)
+
+    console.print(f"[green]Found {len(models)} models[/green]\n")
+    for i, m in enumerate(models, 1):
+        console.print(f"  {i:2d}. {m}")
+    console.print()
+
+    os.makedirs(output_dir, exist_ok=True)
+    law_list = laws.split(",") if laws else None
+    summaries = []
+
+    for idx, model in enumerate(models, 1):
+        console.print(f"\n[bold cyan]{'='*60}[/bold cyan]")
+        console.print(f"[bold cyan]  [{idx}/{len(models)}] {model}[/bold cyan]")
+        console.print(f"[bold cyan]{'='*60}[/bold cyan]\n")
+
+        conn = HuggingFaceConnector(model=model)
+        runner = BenchmarkRunner(
+            connector=conn, laws=law_list, n_questions=questions,
+            seed=seed, delay=delay,
+        )
+
+        try:
+            report = runner.run()
+        except Exception as exc:
+            console.print(f"[red]  ✗ {model} failed: {exc}[/red]\n")
+            summaries.append({"model": model, "score": None, "error": str(exc)})
+            continue
+
+        # Per-model results table
+        table = Table(title=f"📊 {model}", show_lines=True)
+        table.add_column("Law", style="cyan")
+        table.add_column("Score", justify="right")
+        for law_name, score in sorted(
+            report.per_law_scores.items(), key=lambda x: x[1], reverse=True
+        ):
+            color = "green" if score >= 0.7 else "yellow" if score >= 0.4 else "red"
+            table.add_row(law_name, f"[{color}]{score:.1%}[/{color}]")
+        console.print(table)
+        console.print(f"  [bold]{report.summary()}[/bold]\n")
+
+        # Save individual result
+        safe_name = model.replace("/", "__")
+        out_path = os.path.join(output_dir, f"{safe_name}.json")
+        with open(out_path, "w") as f:
+            f.write(report.to_json())
+        console.print(f"  [dim]Saved → {out_path}[/dim]")
+
+        summaries.append({
+            "model": model,
+            "score": report.overall_score,
+            "passed": report.total_passed,
+            "total": report.total_questions,
+        })
+
+        if push:
+            token = os.environ.get("HF_TOKEN", "")
+            if token:
+                from lawbreaker.leaderboard import Leaderboard
+                try:
+                    lb = Leaderboard()
+                    path = lb.push_result(report, token)
+                    console.print(f"  [green]Pushed → {path}[/green]")
+                except Exception as exc:
+                    console.print(f"  [yellow]Push failed: {exc}[/yellow]")
+
+    # Final comparison table
+    console.print(f"\n[bold cyan]{'='*60}[/bold cyan]")
+    console.print(f"[bold cyan]  🏆 Final Leaderboard[/bold cyan]")
+    console.print(f"[bold cyan]{'='*60}[/bold cyan]\n")
+
+    comp_table = Table(title="🏆 Model Comparison", show_lines=True)
+    comp_table.add_column("#", style="dim", justify="right")
+    comp_table.add_column("Model", style="cyan")
+    comp_table.add_column("Score", justify="right")
+    comp_table.add_column("Passed", justify="right")
+
+    ranked = sorted(
+        [s for s in summaries if s.get("score") is not None],
+        key=lambda x: x["score"], reverse=True
+    )
+    for i, s in enumerate(ranked, 1):
+        pct = s["score"] * 100
+        color = "green" if pct >= 70 else "yellow" if pct >= 40 else "red"
+        comp_table.add_row(
+            str(i), s["model"],
+            f"[{color}]{pct:.1f}%[/{color}]",
+            f"{s['passed']}/{s['total']}"
+        )
+
+    failed = [s for s in summaries if s.get("score") is None]
+    for s in failed:
+        comp_table.add_row("—", s["model"], "[red]ERROR[/red]", "—")
+
+    console.print(comp_table)
+
+    # Save combined summary
+    summary_path = os.path.join(output_dir, "_leaderboard.json")
+    with open(summary_path, "w") as f:
+        json.dump(summaries, f, indent=2)
+    console.print(f"\n[green]Leaderboard saved to {summary_path}[/green]\n")
 
 
 @main.command()

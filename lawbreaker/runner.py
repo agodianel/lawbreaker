@@ -8,6 +8,7 @@ connector, verifies answers symbolically, and produces a ``BenchmarkReport``.
 from __future__ import annotations
 
 import random
+import time
 from typing import Optional
 
 from rich.console import Console
@@ -39,6 +40,7 @@ class BenchmarkRunner:
         laws: list[str] | None = None,
         n_questions: int = 10,
         seed: Optional[int] = None,
+        delay: float = 0.0,
     ):
         """Initialise the benchmark runner.
 
@@ -47,10 +49,12 @@ class BenchmarkRunner:
             laws: List of law short-names, or None for all laws.
             n_questions: Questions per law.
             seed: Random seed for reproducibility.
+            delay: Seconds to wait between API calls (avoids rate limits).
         """
         self._connector = connector
         self._n_questions = n_questions
         self._seed = seed
+        self._delay = delay
         self._verifier = PhysicsVerifier()
 
         if laws:
@@ -83,6 +87,8 @@ class BenchmarkRunner:
             for law in self._laws:
                 task = progress.add_task(f"Testing {law.LAW_NAME}...", total=self._n_questions)
                 for i in range(self._n_questions):
+                    if self._delay and (results or i > 0):
+                        time.sleep(self._delay)
                     q_seed = rng.randint(0, 2**31) if self._seed is not None else None
                     difficulty = rng.choice(["easy", "medium", "hard"])
                     question = law.generate(difficulty=difficulty, seed=q_seed)
