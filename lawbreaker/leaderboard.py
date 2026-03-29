@@ -16,7 +16,7 @@ from lawbreaker.core.result import BenchmarkReport
 class Leaderboard:
     """HuggingFace Dataset-backed leaderboard for LawBreaker results."""
 
-    DATASET_REPO = "lawbreaker/leaderboard"
+    DATASET_REPO = "diago01/llm-physics-law-breaker"
 
     def push_result(self, report: BenchmarkReport, token: str) -> str:
         """Push a benchmark report to the HuggingFace Dataset.

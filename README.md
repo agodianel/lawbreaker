@@ -7,8 +7,8 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
-  <a href="https://huggingface.co/datasets/lawbreaker/leaderboard"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Leaderboard-yellow" alt="HuggingFace Leaderboard"></a>
-  <a href="https://github.com/lawbreaker-benchmark/lawbreaker/actions"><img src="https://img.shields.io/github/actions/workflow/status/lawbreaker-benchmark/lawbreaker/ci.yml?label=CI" alt="CI"></a>
+  <a href="https://huggingface.co/datasets/diago01/llm-physics-law-breaker"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Leaderboard-yellow" alt="HuggingFace Leaderboard"></a>
+  <a href="https://github.com/agodianel/lawbreaker/actions"><img src="https://img.shields.io/github/actions/workflow/status/agodianel/lawbreaker/ci.yml?label=CI" alt="CI"></a>
 </p>
 
 <p align="center">
@@ -178,13 +178,14 @@ results/
 
 ## 🏆 Leaderboard
 
-| Rank | Model | Overall | Worst Law | Worst Trap |
-| ---- | ----- | ------- | --------- | ---------- |
-| 1 | Claude 3.5 Sonnet | 82.5% | Ideal Gas (65%) | celsius_trap (50%) |
-| 2 | GPT-4o | 72.5% | Ideal Gas (40%) | celsius_trap (25%) |
-| 3 | Llama 3.1 8B | 48.0% | Coulomb's Law (20%) | unit_confusion (15%) |
+View the full leaderboard on [🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker).
 
-> Results are pushed to [🤗 HuggingFace Dataset](https://huggingface.co/datasets/lawbreaker/leaderboard).
+Submit your own results:
+
+```bash
+export HF_TOKEN="hf_..."
+lawbreaker run --model <MODEL> --connector <CONNECTOR> --questions 5 --push
+```
 
 ## ⚡ All 28 Physics Laws
 
@@ -352,10 +353,10 @@ class MyNewLaw(BaseLaw):
 
 ```bash
 export HF_TOKEN="hf_..."
-lawbreaker run --model your-model --connector openai --questions 10 --push
+lawbreaker run --model your-model --connector openai --questions 5 --push
 ```
 
-Results are uploaded to the public HuggingFace Dataset and appear on the leaderboard automatically.
+Results are uploaded to the [🤗 HuggingFace Dataset](https://huggingface.co/datasets/diago01/llm-physics-law-breaker) and appear on the leaderboard automatically.
 
 ## 🧪 Running Tests
 

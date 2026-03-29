@@ -19,7 +19,7 @@ from lawbreaker.runner import BenchmarkRunner
 OUT_DIR = "results/gemini"
 N_QUESTIONS = 5
 SEED = 42
-DELAY_BETWEEN_MODELS = 2  # seconds between models to avoid rate limits
+DELAY_BETWEEN_MODELS = 5  # seconds between models to avoid rate limits
 
 
 def _probe_model(model: str) -> bool:
