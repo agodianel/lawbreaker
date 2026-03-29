@@ -53,8 +53,8 @@ class OpenAIConnector(BaseConnector):
 
         all_models = list(client.models.list())
 
-        # Keep only gpt-* chat models, exclude instruct/audio/realtime/search
-        skip = {"instruct", "audio", "realtime", "search", "transcribe", "tts", "dall-e", "whisper", "embedding"}
+        # Keep only gpt-* chat models, exclude non-chat variants
+        skip = {"instruct", "audio", "realtime", "search", "transcribe", "tts", "dall-e", "whisper", "embedding", "codex", "-pro"}
         chat_models = []
         for m in all_models:
             mid = m.id.lower()
@@ -105,7 +105,7 @@ class OpenAIConnector(BaseConnector):
                     {"role": "user", "content": question_text},
                 ],
                 temperature=0.0,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
             return response.choices[0].message.content.strip()
         except Exception as exc:
