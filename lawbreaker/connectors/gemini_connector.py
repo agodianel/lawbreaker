@@ -28,15 +28,23 @@ class GeminiConnector(BaseConnector):
         return self._model
 
     @classmethod
-    def discover_models(cls, api_key: str | None = None) -> list[str]:
+    def discover_models(
+        cls,
+        api_key: str | None = None,
+        recent_only: bool = True,
+    ) -> list[str]:
         """Return available Gemini model names that support content generation.
 
         Args:
             api_key: Optional API key; falls back to ``GEMINI_API_KEY``.
+            recent_only: If *True* (default), keep only the two most recent
+                major versions (e.g. 3.0 and 3.1).  Set to *False* to
+                return every Gemini model.
 
         Returns:
             Sorted list of model name strings (e.g. ``'gemini-2.0-flash'``).
         """
+        import re
         from google import genai
 
         key = api_key or os.environ.get("GEMINI_API_KEY", "")
@@ -54,6 +62,19 @@ class GeminiConnector(BaseConnector):
             if not name.startswith("gemini"):
                 continue
             models.append(name)
+
+        if recent_only and models:
+            # Extract major versions (e.g. "3.1" from "gemini-3.1-flash")
+            version_pat = re.compile(r"^gemini-(\d+\.\d+)")
+            versions: set[str] = set()
+            for name in models:
+                match = version_pat.match(name)
+                if match:
+                    versions.add(match.group(1))
+            if versions:
+                top2 = sorted(versions, key=lambda v: tuple(map(int, v.split("."))), reverse=True)[:2]
+                models = [n for n in models if any(f"gemini-{v}" in n for v in top2)]
+
         return sorted(models)
 
     def query(self, question_text: str, system_prompt: str = SYSTEM_PROMPT) -> str:

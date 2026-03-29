@@ -33,7 +33,7 @@ Always welcome! Please include test evidence when applicable.
 
 ```bash
 # Clone the repository
-git clone https://github.com/lawbreaker-benchmark/lawbreaker.git
+git clone https://github.com/agodianel/lawbreaker.git
 cd lawbreaker
 
 # Create a virtual environment

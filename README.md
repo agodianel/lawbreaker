@@ -5,7 +5,6 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/lawbreaker/"><img src="https://img.shields.io/pypi/v/lawbreaker?color=blue&label=PyPI" alt="PyPI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
   <a href="https://huggingface.co/datasets/lawbreaker/leaderboard"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Leaderboard-yellow" alt="HuggingFace Leaderboard"></a>
@@ -13,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-install">Quick Start</a> ·
+  <a href="#-install">Quick Start</a> ·
   <a href="#-all-28-physics-laws">28 Physics Laws</a> ·
   <a href="#-leaderboard">Leaderboard</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
@@ -48,16 +47,10 @@ Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
 4. Supports **ANY model** via API — OpenAI, Anthropic, Google Gemini, HuggingFace, Ollama
 5. Outputs a shareable **leaderboard JSON** automatically
 
-## 📦 Quick Install
+## 📦 Install
 
 ```bash
-pip install lawbreaker
-```
-
-For development:
-
-```bash
-git clone https://github.com/lawbreaker-benchmark/lawbreaker.git
+git clone https://github.com/agodianel/lawbreaker.git
 cd lawbreaker
 python3 -m venv .venv
 source .venv/bin/activate
@@ -326,7 +319,7 @@ You can contribute:
 
 ```bash
 # Development setup
-git clone https://github.com/lawbreaker-benchmark/lawbreaker.git
+git clone https://github.com/agodianel/lawbreaker.git
 cd lawbreaker
 python3 -m venv .venv
 source .venv/bin/activate

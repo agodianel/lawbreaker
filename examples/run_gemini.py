@@ -1,7 +1,9 @@
 """
-Example: Run LawBreaker benchmark against ALL available Google Gemini models.
+Example: Run LawBreaker benchmark against recent Google Gemini models.
 
-Discovers models via the Gemini API and benchmarks each one.
+Discovers the two most recent Gemini model versions via the API
+and benchmarks each one.  If a model returns an API error on its
+first question, it is skipped immediately to save quota.
 
 Usage:
     export GEMINI_API_KEY="AIza..."
@@ -20,10 +22,20 @@ SEED = 42
 DELAY_BETWEEN_MODELS = 2  # seconds between models to avoid rate limits
 
 
+def _probe_model(model: str) -> bool:
+    """Send a single trivial question to check if the model responds."""
+    try:
+        connector = GeminiConnector(model=model)
+        connector.query("What is 1+1?")
+        return True
+    except Exception:
+        return False
+
+
 def main():
-    """Discover all Gemini models and run benchmarks against each."""
-    print("Discovering available Gemini models...")
-    models = GeminiConnector.discover_models()
+    """Discover recent Gemini models and benchmark each one."""
+    print("Discovering available Gemini models (recent versions only)...")
+    models = GeminiConnector.discover_models(recent_only=True)
     print(f"Found {len(models)} model(s): {', '.join(models)}\n")
 
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -32,7 +44,13 @@ def main():
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        print(f"[{i + 1}/{len(models)}] Benchmarking {model} ...")
+        # Quick probe — skip immediately if the model errors out
+        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
+        if not _probe_model(model):
+            print(f"  !! {model} returned an error, skipping.\n")
+            continue
+
+        print(f"  Benchmarking {model} ...")
         try:
             connector = GeminiConnector(model=model)
             runner = BenchmarkRunner(

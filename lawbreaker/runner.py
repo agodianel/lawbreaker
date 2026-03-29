@@ -86,6 +86,7 @@ class BenchmarkRunner:
         ) as progress:
             for law in self._laws:
                 task = progress.add_task(f"Testing {law.LAW_NAME}...", total=self._n_questions)
+                law_error = False
                 for i in range(self._n_questions):
                     if self._delay and (results or i > 0):
                         time.sleep(self._delay)
@@ -95,6 +96,17 @@ class BenchmarkRunner:
                     result = self.run_single(question)
                     results.append(result)
                     progress.advance(task)
+                    # Skip remaining questions for this law on first API error
+                    if result.error and "API" in result.error:
+                        console.print(
+                            f"[yellow]  ⚠ API error on {law.LAW_NAME}, "
+                            f"skipping remaining questions[/yellow]"
+                        )
+                        law_error = True
+                        break
+                if law_error:
+                    # Advance progress for skipped questions
+                    progress.update(task, completed=self._n_questions)
 
         return BenchmarkReport.from_results(self._connector.model_name, results)
 
