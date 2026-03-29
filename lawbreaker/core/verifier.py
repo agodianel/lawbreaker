@@ -55,7 +55,12 @@ class PhysicsVerifier:
         return relative_error <= tolerance
 
     def extract_numeric(self, llm_response: str) -> Optional[float]:
-        """Parse the first numeric value from a free-text LLM response.
+        """Parse the final numeric answer from a free-text LLM response.
+
+        LLMs often show working before the answer, so we prefer:
+        1. A number on the last non-empty line (the final answer)
+        2. The last scientific-notation number in the full text
+        3. The last decimal/integer in the full text
 
         Handles formats such as:
             "The voltage is 10V"
@@ -66,6 +71,7 @@ class PhysicsVerifier:
             "3.2e3 Pa"
             "-273.15"
             "Answer: 42 J"
+            "KE = ½ × 8.75 × (8.83)² = 341.114 J\\n\\n341.114 J"
 
         Args:
             llm_response: Raw text string from the LLM.
@@ -78,40 +84,51 @@ class PhysicsVerifier:
 
         text = llm_response.strip()
 
-        # Try scientific notation with × first
-        match = re.search(
+        # --- Strategy: extract the LAST number, since LLMs put the answer last ---
+
+        # Helper: find all scientific notation matches (×10^N style)
+        sci_matches = list(re.finditer(
             r"[≈≅~]?\s*([+-]?\d+\.?\d*)\s*[×x]\s*10\s*\^?\s*([+-]?\d+)", text
-        )
-        if match:
-            mantissa = float(match.group(1))
-            exponent = int(match.group(2))
+        ))
+        if sci_matches:
+            m = sci_matches[-1]
+            mantissa = float(m.group(1))
+            exponent = int(m.group(2))
             try:
                 return mantissa * (10.0 ** exponent)
             except OverflowError:
                 return float("inf") if mantissa >= 0 else float("-inf")
 
-        # Try e-notation
-        match = re.search(r"[≈≅~]?\s*([+-]?\d+\.?\d*)[eE]([+-]?\d+)", text)
-        if match:
+        # Helper: find all e-notation matches
+        e_matches = list(re.finditer(
+            r"[≈≅~]?\s*([+-]?\d+\.?\d*)[eE]([+-]?\d+)", text
+        ))
+        if e_matches:
+            m = e_matches[-1]
             try:
-                return float(match.group(1) + "e" + match.group(2))
+                return float(m.group(1) + "e" + m.group(2))
             except (OverflowError, ValueError):
                 return float("inf")
 
-        # Try decimal numbers (with optional sign and approx symbols)
-        match = re.search(r"[≈≅~]?\s*([+-]?\d+\.\d+)", text)
-        if match:
-            return float(match.group(1))
+        # Strip commas from numbers (e.g. "345,085.3" → "345085.3")
+        cleaned = re.sub(r"(\d),(\d)", r"\1\2", text)
 
-        # Try integers
-        match = re.search(r"[≈≅~]?\s*([+-]?\d+)\s*(?:[a-zA-Zμ°Ω]|$)", text)
-        if match:
-            return float(match.group(1))
+        # Find last decimal number
+        dec_matches = list(re.finditer(r"[≈≅~]?\s*([+-]?\d+\.\d+)", cleaned))
+        if dec_matches:
+            return float(dec_matches[-1].group(1))
 
-        # Last resort: any standalone number
-        match = re.search(r"([+-]?\d+\.?\d*)", text)
-        if match:
-            return float(match.group(1))
+        # Find last integer followed by a unit or end of string
+        int_matches = list(re.finditer(
+            r"[≈≅~]?\s*([+-]?\d+)\s*(?:[a-zA-Zμ°Ω]|$)", cleaned
+        ))
+        if int_matches:
+            return float(int_matches[-1].group(1))
+
+        # Last resort: last standalone number
+        num_matches = list(re.finditer(r"([+-]?\d+\.?\d*)", cleaned))
+        if num_matches:
+            return float(num_matches[-1].group(1))
 
         return None
 
