@@ -45,9 +45,39 @@ Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
 2. Uses **SYMBOLIC MATH** for grading — not LLM-as-judge
 3. Embeds **TRAPS** in questions (anchoring bias, wrong units, misleading hints)
 4. Supports **ANY model** via API — OpenAI, Anthropic, Google Gemini, HuggingFace, Ollama
-5. Outputs a shareable **leaderboard JSON** automatically
+5. **Auto-discovers** the latest models from each provider's API — no hardcoded model lists
+6. Outputs a shareable **leaderboard JSON** automatically
 
-## 📦 Install
+## � Model Auto-Discovery
+
+LawBreaker can auto-discover the latest models from each provider — no need to hardcode model names:
+
+```python
+from lawbreaker.connectors.openai_connector import OpenAIConnector
+from lawbreaker.connectors.anthropic_connector import AnthropicConnector
+from lawbreaker.connectors.gemini_connector import GeminiConnector
+from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
+
+# Discover the 2 most recent GPT chat models
+OpenAIConnector.discover_models(limit=2)
+# → ['gpt-4.1', 'gpt-4o']
+
+# Discover the 2 most recent Claude models
+AnthropicConnector.discover_models(limit=2)
+# → ['claude-sonnet-4-20250514', 'claude-opus-4-20250514']
+
+# Discover recent Gemini model versions
+GeminiConnector.discover_models(recent_only=True)
+# → ['gemini-2.5-flash', 'gemini-2.5-pro']
+
+# Discover all warm HuggingFace inference models
+HuggingFaceConnector.discover_models()
+# → ['meta-llama/Llama-3.1-8B-Instruct', 'Qwen/Qwen2.5-72B-Instruct', ...]
+```
+
+The example scripts in `examples/` use auto-discovery by default — just set your API key and run.
+
+## �📦 Install
 
 ```bash
 git clone https://github.com/agodianel/lawbreaker.git
@@ -316,12 +346,13 @@ lawbreaker/
 │   ├── test_verifier.py
 │   ├── test_connectors/
 │   └── test_laws/
-├── examples/                        # Usage examples
-│   ├── run_openai.py
-│   ├── run_anthropic.py
-│   ├── run_gemini.py
-│   ├── run_huggingface.py
-│   └── run_ollama.py
+├── examples/                        # Usage examples (all use auto-discovery)
+│   ├── run_openai.py                #   Auto-discovers latest GPT models
+│   ├── run_anthropic.py             #   Auto-discovers latest Claude models
+│   ├── run_gemini.py                #   Auto-discovers latest Gemini models
+│   ├── run_huggingface.py           #   Auto-discovers all HF inference models
+│   ├── run_ollama.py                #   Benchmarks local Ollama models
+│   └── push_results.py              #   Batch upload results to HF dataset
 └── .github/
     ├── workflows/ci.yml             # CI pipeline (Python 3.10/3.11/3.12/3.13)
     ├── ISSUE_TEMPLATE/              # Bug report & feature request templates

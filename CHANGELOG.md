@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-29
+
+### Added
+- **Model auto-discovery** for all major providers via `discover_models()` classmethods:
+  - **OpenAI**: Discovers latest GPT chat models via `client.models.list()`, filters for `gpt-*`, sorts by creation date
+  - **Anthropic**: Discovers latest Claude models via `client.models.list()` with pagination, sorts by `created_at`
+  - **Gemini**: Discovers recent Gemini model versions (already in v0.2.0, unchanged)
+  - **HuggingFace**: Discovers all warm inference models (already in v0.2.0, unchanged)
+- Example scripts (`run_openai.py`, `run_anthropic.py`) now use auto-discovery instead of hardcoded model lists
+- All 4 provider run scripts (OpenAI, Anthropic, Gemini, HuggingFace) auto-discover models on launch
+
 ## [0.3.0] - 2026-03-29
 
 ### Added
