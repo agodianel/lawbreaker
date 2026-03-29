@@ -20,6 +20,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "gemini")
 N_QUESTIONS = 5
 SEED = 42
+DELAY = 1.0
 DELAY_BETWEEN_MODELS = 5  # seconds between models to avoid rate limits
 
 
@@ -55,7 +56,8 @@ def main():
         try:
             connector = GeminiConnector(model=model)
             runner = BenchmarkRunner(
-                connector=connector, n_questions=N_QUESTIONS, seed=SEED
+                connector=connector, n_questions=N_QUESTIONS, seed=SEED,
+                delay=DELAY,
             )
             report = runner.run()
 

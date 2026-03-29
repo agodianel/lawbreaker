@@ -18,6 +18,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "openai")
 N_QUESTIONS = 5
 SEED = 42
+DELAY = 1.0
 
 
 def _probe_model(model: str) -> bool:
@@ -66,7 +67,8 @@ def main():
         try:
             connector = OpenAIConnector(model=model)
             runner = BenchmarkRunner(
-                connector=connector, n_questions=N_QUESTIONS, seed=SEED
+                connector=connector, n_questions=N_QUESTIONS, seed=SEED,
+                delay=DELAY,
             )
             report = runner.run()
 
