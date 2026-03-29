@@ -92,7 +92,14 @@ class BenchmarkRunner:
                         time.sleep(self._delay)
                     q_seed = rng.randint(0, 2**31) if self._seed is not None else None
                     difficulty = rng.choice(["easy", "medium", "hard"])
-                    question = law.generate(difficulty=difficulty, seed=q_seed)
+                    try:
+                        question = law.generate(difficulty=difficulty, seed=q_seed)
+                    except Exception as exc:
+                        console.print(
+                            f"[yellow]  ⚠ generate() failed for {law.LAW_NAME}: {exc}[/yellow]"
+                        )
+                        progress.advance(task)
+                        continue
                     result = self.run_single(question)
                     results.append(result)
                     progress.advance(task)
@@ -131,7 +138,17 @@ class BenchmarkRunner:
                 error=str(exc),
             )
 
-        extracted = self._verifier.extract_numeric(llm_response)
+        try:
+            extracted = self._verifier.extract_numeric(llm_response)
+        except Exception:
+            return QuestionResult(
+                question=question,
+                llm_response=llm_response,
+                extracted_answer=None,
+                passed=False,
+                error="Failed to parse numeric answer from response",
+            )
+
         if extracted is None:
             return QuestionResult(
                 question=question,
@@ -141,9 +158,12 @@ class BenchmarkRunner:
                 error="Could not extract numeric answer from response",
             )
 
-        passed = self._verifier.verify_numeric(
-            extracted, question.correct_answer
-        )
+        try:
+            passed = self._verifier.verify_numeric(
+                extracted, question.correct_answer
+            )
+        except Exception:
+            passed = False
         return QuestionResult(
             question=question,
             llm_response=llm_response,

@@ -85,12 +85,18 @@ class PhysicsVerifier:
         if match:
             mantissa = float(match.group(1))
             exponent = int(match.group(2))
-            return mantissa * (10**exponent)
+            try:
+                return mantissa * (10.0 ** exponent)
+            except OverflowError:
+                return float("inf") if mantissa >= 0 else float("-inf")
 
         # Try e-notation
         match = re.search(r"[≈≅~]?\s*([+-]?\d+\.?\d*)[eE]([+-]?\d+)", text)
         if match:
-            return float(match.group(1) + "e" + match.group(2))
+            try:
+                return float(match.group(1) + "e" + match.group(2))
+            except (OverflowError, ValueError):
+                return float("inf")
 
         # Try decimal numbers (with optional sign and approx symbols)
         match = re.search(r"[≈≅~]?\s*([+-]?\d+\.\d+)", text)
