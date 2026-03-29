@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="assets/lawbreaker_logo.png" width="400" alt="LawBreaker Logo">
   <h1 align="center">⚖️ LawBreaker</h1>
   <p align="center"><strong>The benchmark that catches LLMs breaking physics.</strong></p>
 </p>
