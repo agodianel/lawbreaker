@@ -30,6 +30,12 @@ from lawbreaker.laws.magnetic_force import MagneticForceLaw
 from lawbreaker.laws.work_energy import WorkEnergyLaw
 from lawbreaker.laws.specific_heat import SpecificHeatLaw
 from lawbreaker.laws.gravitational_pe import GravitationalPELaw
+from lawbreaker.laws.chain_ohm_power import ChainOhmPowerLaw
+from lawbreaker.laws.chain_newton_ke import ChainNewtonKELaw
+from lawbreaker.laws.chain_pe_speed import ChainPESpeedLaw
+from lawbreaker.laws.chain_ohm_kvl import ChainOhmKVLLaw
+from lawbreaker.laws.chain_spring_launch import ChainSpringLaunchLaw
+from lawbreaker.laws.chain_heat_height import ChainHeatHeightLaw
 
 
 ALL_LAWS = [
@@ -59,6 +65,13 @@ ALL_LAWS = [
     WorkEnergyLaw,
     SpecificHeatLaw,
     GravitationalPELaw,
+    # Combined / multi-step chains
+    ChainOhmPowerLaw,
+    ChainNewtonKELaw,
+    ChainPESpeedLaw,
+    ChainOhmKVLLaw,
+    ChainSpringLaunchLaw,
+    ChainHeatHeightLaw,
 ]
 
 

@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="#-install">Quick Start</a> ·
-  <a href="#-all-28-physics-laws">28 Physics Laws</a> ·
+  <a href="#-all-34-physics-laws">34 Physics Laws</a> ·
   <a href="#-leaderboard">Leaderboard</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="CHANGELOG.md">Changelog</a>
@@ -190,7 +190,9 @@ export HF_TOKEN="hf_..."
 lawbreaker run --model <MODEL> --connector <CONNECTOR> --questions 5 --push
 ```
 
-## ⚡ All 28 Physics Laws
+## ⚡ All 34 Physics Laws
+
+### Single-Law Challenges (28)
 
 | # | Law | Formula | Key Traps |
 |---|-----|---------|-----------|
@@ -223,6 +225,19 @@ lawbreaker run --model <MODEL> --connector <CONNECTOR> --questions 5 --push
 | 27 | **Specific Heat** | Q = mcΔT | Celsius vs Kelvin, gram/kg, anchoring |
 | 28 | **Gravitational PE** | U = mgh | Height units, g confusion, mass confusion |
 
+### Multi-Step Combined Chains (6)
+
+These questions chain two physics laws together — the LLM must solve an intermediate step before reaching the final answer.
+
+| # | Chain | Steps | Key Traps |
+|---|-------|-------|-----------|
+| 29 | **Ohm → Power** | I=V/R → P=VI | kΩ/Ω confusion, wrong intermediate I, anchoring |
+| 30 | **Force → Kinetic Energy** | a=F/m → v=at → KE=½mv² | Forget ½, grams/kg, wrong intermediate v |
+| 31 | **PE → Speed** | mgh=½mv² → v=√(2gh) | Mass distractor (cancels), cm/m height, forget √ |
+| 32 | **Ohm → Kirchhoff Voltage** | I=V/(R₁+R₂) → V₂=IR₂ | kΩ/Ω, use single R for current, anchoring |
+| 33 | **Spring → Speed** | ½kx²=½mv² → v=x√(k/m) | cm/m compression, forget √, anchoring |
+| 34 | **Heat → Height** | Q=mcΔT → h=Q/(mg) | °C vs K confusion, grams/kg, anchoring |
+
 ### Law Categories
 
 | Category | Laws | Count |
@@ -233,6 +248,7 @@ lawbreaker run --model <MODEL> --connector <CONNECTOR> --questions 5 --push
 | **Optics & Waves** | Snell's Law, Wave Speed, Thin Lens, Pendulum Period | 4 |
 | **Fluid Mechanics** | Bernoulli's Equation | 1 |
 | **Gravitation** | Gravitational Force | 1 |
+| **Multi-Step Chains** | Ohm→Power, Force→KE, PE→Speed, Ohm→KVL, Spring→Speed, Heat→Height | 6 |
 
 ## 📁 Repository Structure
 
@@ -260,7 +276,7 @@ lawbreaker/
 │   │   ├── question.py              #   Question dataclass
 │   │   ├── result.py                #   Result & report classes
 │   │   └── verifier.py              #   Symbolic math grader
-│   └── laws/                        # 28 physics law implementations
+│   └── laws/                        # 34 physics law implementations
 │       ├── base.py                  #   Abstract BaseLaw class
 │       ├── ohm.py                   #   Ohm's Law
 │       ├── kirchhoff_current.py     #   Kirchhoff's Current Law
@@ -289,8 +305,14 @@ lawbreaker/
 │       ├── magnetic_force.py        #   Magnetic Force
 │       ├── work_energy.py           #   Work-Energy Theorem
 │       ├── specific_heat.py         #   Specific Heat
-│       └── gravitational_pe.py      #   Gravitational Potential Energy
-├── tests/                           # 164+ pytest tests
+│       ├── gravitational_pe.py      #   Gravitational Potential Energy
+│       ├── chain_ohm_power.py       #   🔗 Ohm → Power
+│       ├── chain_newton_ke.py       #   🔗 Force → Kinetic Energy
+│       ├── chain_pe_speed.py        #   🔗 PE → Speed
+│       ├── chain_ohm_kvl.py         #   🔗 Ohm → Kirchhoff Voltage
+│       ├── chain_spring_launch.py   #   🔗 Spring → Speed
+│       └── chain_heat_height.py     #   🔗 Heat → Height
+├── tests/                           # 194 pytest tests
 │   ├── test_verifier.py
 │   ├── test_connectors/
 │   └── test_laws/
@@ -368,7 +390,7 @@ pip install -e ".[dev]"
 pytest -v
 ```
 
-All 164+ tests run without any hardware or API keys.
+All 194 tests run without any hardware or API keys.
 
 ## 🌟 Acknowledgments
 
@@ -380,5 +402,5 @@ Built with the assistance of [Claude](https://github.com/claude) by Anthropic.
 
 ---
 
-**LawBreaker** — *Structure over magic. Symbolic math over vibes. 28 laws and counting.*
+**LawBreaker** — *Structure over magic. Symbolic math over vibes. 34 laws and counting.*
 # lawbreaker

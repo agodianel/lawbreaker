@@ -35,6 +35,14 @@ from lawbreaker.laws.work_energy import WorkEnergyLaw
 from lawbreaker.laws.specific_heat import SpecificHeatLaw
 from lawbreaker.laws.gravitational_pe import GravitationalPELaw
 
+# Combined / multi-step law chains
+from lawbreaker.laws.chain_ohm_power import ChainOhmPowerLaw
+from lawbreaker.laws.chain_newton_ke import ChainNewtonKELaw
+from lawbreaker.laws.chain_pe_speed import ChainPESpeedLaw
+from lawbreaker.laws.chain_ohm_kvl import ChainOhmKVLLaw
+from lawbreaker.laws.chain_spring_launch import ChainSpringLaunchLaw
+from lawbreaker.laws.chain_heat_height import ChainHeatHeightLaw
+
 # Registry mapping short names to law classes
 LAW_REGISTRY: dict[str, type[BaseLaw]] = {
     "ohm": OhmLaw,
@@ -65,6 +73,13 @@ LAW_REGISTRY: dict[str, type[BaseLaw]] = {
     "work_energy": WorkEnergyLaw,
     "specific_heat": SpecificHeatLaw,
     "gravitational_pe": GravitationalPELaw,
+    # Combined / multi-step chains
+    "chain_ohm_power": ChainOhmPowerLaw,
+    "chain_newton_ke": ChainNewtonKELaw,
+    "chain_pe_speed": ChainPESpeedLaw,
+    "chain_ohm_kvl": ChainOhmKVLLaw,
+    "chain_spring_launch": ChainSpringLaunchLaw,
+    "chain_heat_height": ChainHeatHeightLaw,
 }
 
 ALL_LAWS = list(LAW_REGISTRY.values())
@@ -99,6 +114,12 @@ __all__ = [
     "WorkEnergyLaw",
     "SpecificHeatLaw",
     "GravitationalPELaw",
+    "ChainOhmPowerLaw",
+    "ChainNewtonKELaw",
+    "ChainPESpeedLaw",
+    "ChainOhmKVLLaw",
+    "ChainSpringLaunchLaw",
+    "ChainHeatHeightLaw",
     "LAW_REGISTRY",
     "ALL_LAWS",
 ]
