@@ -11,7 +11,8 @@ Usage:
 import glob
 import os
 
-RESULTS_DIR = "results"
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(_SCRIPT_DIR, "results")
 REPO_ID = "diago01/llm-physics-law-breaker"
 
 

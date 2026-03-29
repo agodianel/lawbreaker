@@ -16,7 +16,8 @@ import time
 from lawbreaker.connectors.gemini_connector import GeminiConnector
 from lawbreaker.runner import BenchmarkRunner
 
-OUT_DIR = "results/gemini"
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "gemini")
 N_QUESTIONS = 5
 SEED = 42
 DELAY_BETWEEN_MODELS = 5  # seconds between models to avoid rate limits

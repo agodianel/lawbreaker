@@ -19,7 +19,8 @@ MODELS = [
     "claude-sonnet-4-20250514",
     "claude-opus-4-20250514",
 ]
-OUT_DIR = "results/anthropic"
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "anthropic")
 N_QUESTIONS = 5
 SEED = 42
 

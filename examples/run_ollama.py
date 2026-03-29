@@ -20,7 +20,8 @@ MODELS = [
     "llama3.2",
     "gemma3",
 ]
-OUT_DIR = "results/ollama"
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "ollama")
 N_QUESTIONS = 5
 SEED = 42
 

@@ -1,7 +1,7 @@
-"""Example: Run LawBreaker benchmark against recent HuggingFace models.
+"""Example: Run LawBreaker benchmark against ALL available HuggingFace models.
 
-Benchmarks a curated list of recent open models on HF Inference API.
-If a model returns an API error on a probe question, it is skipped.
+Auto-discovers warm inference models on HuggingFace, probes each,
+and benchmarks all that respond. Uses a 5s delay between API calls.
 
 Usage:
     export HF_TOKEN="hf_..."
@@ -14,14 +14,11 @@ import time
 from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
 from lawbreaker.runner import BenchmarkRunner
 
-# Recent flagship open models
-MODELS = [
-    "meta-llama/Llama-3.1-8B-Instruct",
-    "meta-llama/Llama-4-Scout-17B-16E-Instruct",
-]
-OUT_DIR = "results/huggingface"
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "huggingface")
 N_QUESTIONS = 5
 SEED = 42
+DELAY = 5.0
 
 
 def _probe_model(model: str) -> bool:
@@ -35,14 +32,21 @@ def _probe_model(model: str) -> bool:
 
 
 def main():
-    """Benchmark recent HuggingFace models."""
+    """Discover and benchmark all available HuggingFace models."""
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    for i, model in enumerate(MODELS):
+    print("Discovering available HuggingFace inference models...")
+    models = HuggingFaceConnector.discover_models()
+    if not models:
+        print("No models found. Check your HF_TOKEN.")
+        return
+    print(f"Found {len(models)} models.\n")
+
+    for i, model in enumerate(models):
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        print(f"[{i + 1}/{len(MODELS)}] Probing {model} ...")
+        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
         if not _probe_model(model):
             print(f"  !! {model} returned an error, skipping.\n")
             continue
@@ -51,7 +55,8 @@ def main():
         try:
             connector = HuggingFaceConnector(model=model)
             runner = BenchmarkRunner(
-                connector=connector, n_questions=N_QUESTIONS, seed=SEED
+                connector=connector, n_questions=N_QUESTIONS, seed=SEED,
+                delay=DELAY,
             )
             report = runner.run()
 
@@ -64,7 +69,7 @@ def main():
         except Exception as exc:
             print(f"  !! Failed: {exc}\n")
 
-        if i < len(MODELS) - 1:
+        if i < len(models) - 1:
             time.sleep(2)
 
     print("Done.")
