@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-29
+
+### Added
+- **6 multi-step combined law chains** — questions that chain two physics laws together, requiring intermediate calculations:
+  - **Ohm → Power**: I = V/R then P = VI
+  - **Force → Kinetic Energy**: a = F/m, v = at, KE = ½mv²
+  - **PE → Speed**: mgh = ½mv², v = √(2gh) (mass cancels)
+  - **Ohm → Kirchhoff Voltage**: series circuit voltage divider I = V/(R₁+R₂), V₂ = IR₂
+  - **Spring → Speed**: ½kx² = ½mv², v = x√(k/m)
+  - **Heat → Height**: Q = mcΔT, h = Q/(mg)
+- Each chain has 3 trap types (unit confusion, intermediate anchoring, missing √, mass distractor, etc.)
+- Total: **34 laws** (28 single-law + 6 multi-step chains), **194 tests** all passing
+
 ## [0.2.0] - 2025-03-29
 
 ### Added
