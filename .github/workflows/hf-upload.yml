@@ -1,0 +1,33 @@
+name: Upload results to HuggingFace
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/results_v0.5/**"
+      - "examples/results_v0.6/**"
+      - "examples/hf_readme.md"
+  workflow_dispatch:   # Manual trigger from Actions tab
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install huggingface_hub
+
+      - name: Upload to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python examples/push_results.py
