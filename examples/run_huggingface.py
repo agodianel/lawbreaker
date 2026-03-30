@@ -15,7 +15,7 @@ from lawbreaker.connectors.huggingface_connector import HuggingFaceConnector
 from lawbreaker.runner import BenchmarkRunner
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "huggingface")
+OUT_DIR = os.path.join(_SCRIPT_DIR, "results_v0.6", "huggingface")
 N_QUESTIONS = 5
 SEED = 42
 DELAY = 5.0
