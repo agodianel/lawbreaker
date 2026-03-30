@@ -8,6 +8,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
   <a href="https://huggingface.co/datasets/diago01/llm-physics-law-breaker"><img src="https://img.shields.io/badge/%F0%9F%A4%97-Leaderboard-yellow" alt="HuggingFace Leaderboard"></a>
+  <a href="https://www.kaggle.com/datasets/dianelago/llm-physics-law-breaker-benchmark-results"><img src="https://img.shields.io/badge/Kaggle-Dataset-20BEFF?logo=kaggle" alt="Kaggle Dataset"></a>
   <a href="https://github.com/agodianel/lawbreaker/actions"><img src="https://img.shields.io/github/actions/workflow/status/agodianel/lawbreaker/ci.yml?label=CI" alt="CI"></a>
 </p>
 
