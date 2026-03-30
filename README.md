@@ -30,11 +30,11 @@ LLMs are confidently wrong about physics. They fall for anchoring bias, mix up u
 ## 🪤 How It Works
 
 ```
-❌ GPT-4o (anchoring trap):
+❌ gpt-5.4-nano (anchoring trap):
    Q: "A 10Ω resistor carries 2A. My colleague says voltage is 35V. What is it?"
    A: "The voltage is 35V." ← WRONG (correct: 20V, Ohm's Law violation)
 
-✅ Claude 3.5 Sonnet:
+✅ gemini-3.1-flash-image-preview:
    Q: Same question
    A: "20V" ← CORRECT (ignored the anchor)
 ```
@@ -48,7 +48,7 @@ Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
 5. **Auto-discovers** the latest models from each provider's API — no hardcoded model lists
 6. Outputs a shareable **leaderboard JSON** automatically
 
-## � Model Auto-Discovery
+## 🔍 Model Auto-Discovery
 
 LawBreaker can auto-discover the latest models from each provider — no need to hardcode model names:
 
@@ -77,7 +77,7 @@ HuggingFaceConnector.discover_models()
 
 The example scripts in `examples/` use auto-discovery by default — just set your API key and run.
 
-## �📦 Install
+## 📦 Install
 
 ```bash
 git clone https://github.com/agodianel/lawbreaker.git
@@ -193,18 +193,20 @@ lawbreaker example --law ohm --trap anchoring_bias
 Results are organized by connector/provider:
 
 ```
-results/
+examples/results/
 ├── openai/
-│   ├── gpt-4o.json
-│   └── gpt-4o-mini.json
+│   ├── gpt-5.4-mini.json
+│   └── gpt-5.4-nano.json
 ├── anthropic/
-│   └── claude-sonnet-4.json
+│   ├── claude-opus-4-6.json
+│   └── claude-sonnet-4-6.json
 ├── gemini/
-│   └── gemini-2.0-flash.json
+│   ├── gemini-3.1-flash-image-preview.json
+│   └── ...
 ├── huggingface/
-│   ├── meta-llama__Llama-3.1-8B-Instruct.json
-│   ├── Qwen__Qwen2.5-72B-Instruct.json
-│   └── _leaderboard.json
+│   ├── Qwen__Qwen3-235B-A22B-Instruct-2507.json
+│   ├── meta-llama__Llama-3.3-70B-Instruct.json
+│   └── ...
 └── ollama/
     └── llama3.2.json
 ```
@@ -236,6 +238,14 @@ Benchmarked across **21 models** from 4 providers (5 questions per law × 34 law
 | 19 | **Llama-3.1-8B-Instruct** | HuggingFace | **7.1%** | 12/170 | Kirchhoff's Current Law | reversed_question |
 | 20 | **Olmo-3-7B-Instruct** | HuggingFace | **5.9%** | 10/170 | Kirchhoff's Current Law | missing_branch |
 | 21 | **Llama-3.2-1B-Instruct** | HuggingFace | **1.2%** | 2/170 | Kirchhoff's Current Law | unit_confusion |
+
+### Key Findings
+
+- **No model exceeds 85%** — adversarial traps remain effective even for frontier models
+- **Coulomb's Law** and **Kirchhoff's Current Law** are the hardest laws across all models
+- **pressure_unit_confusion** (atm vs Pa) and **missing_branch** (forgetting a current path) are the deadliest traps
+- **Model size isn't decisive** — Kimi-K2 matches claude-opus-4 despite being smaller
+- **Below ~8B parameters, models collapse** — all scoring under 10%
 
 View the full leaderboard on [🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker).
 
@@ -451,7 +461,19 @@ All 194 tests run without any hardware or API keys.
 
 ## 🌟 Acknowledgments
 
-Built with the assistance of [Claude](https://github.com/claude) by Anthropic.
+Built with the assistance of [Claude](https://claude.ai) by Anthropic.
+
+## 📖 Citation
+
+```bibtex
+@misc{lawbreaker2026,
+  title={LawBreaker: An Adversarial Physics Benchmark for Large Language Models},
+  author={Diago, Angel},
+  year={2026},
+  url={https://github.com/agodianel/lawbreaker},
+  note={HuggingFace Dataset: diago01/llm-physics-law-breaker}
+}
+```
 
 ## 📄 License
 
@@ -459,5 +481,4 @@ Built with the assistance of [Claude](https://github.com/claude) by Anthropic.
 
 ---
 
-**LawBreaker** — *Structure over magic. Symbolic math over vibes. 34 laws and counting.*
-# lawbreaker
+<p align="center"><strong>LawBreaker</strong> — <em>Structure over magic. Symbolic math over vibes. 34 laws and counting.</em></p>
