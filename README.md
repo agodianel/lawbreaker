@@ -49,6 +49,17 @@ Unlike static benchmarks (UGPhysics, GPQA), the LawBreaker framework:
 5. **Auto-discovers** the latest models from each provider's API — no hardcoded model lists
 6. Outputs a shareable **leaderboard JSON** automatically
 
+## 🆕 What's New in v0.6
+
+| Feature | Description |
+|---------|-------------|
+| **Wilson Score CI** | Every pass rate now includes a 95% confidence interval — no more point estimates |
+| **Relative Error Tracking** | Per-law error stats (mean, median, max, std) quantify *how wrong* a model is, not just pass/fail |
+| **Regression Detection** | `lawbreaker compare` runs two-proportion z-tests across all 34 laws with Benjamini-Hochberg FDR correction |
+| **Graph Generator** | `generate_graphs.py` produces 12 publication-quality charts (leaderboard, heatmap, radar, CI, etc.) |
+| **Framework Rebrand** | LawBreaker is now an "adversarial evaluation framework" — not just a benchmark |
+| **Zero Dependencies** | Uncertainty module uses `math.erf` — no scipy or statsmodels needed |
+
 ## 🔍 Model Auto-Discovery
 
 LawBreaker can auto-discover the latest models from each provider — no need to hardcode model names:
@@ -238,11 +249,29 @@ examples/
     └── ...
 ```
 
-## 🏆 Leaderboard
+## 🏆 Leaderboard (v0.6)
 
-Live results on **[🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker)** and **[Kaggle](https://www.kaggle.com/datasets/dianelago/llm-physics-law-breaker-benchmark-results)**.
+> 34 laws · 5 questions each · 170 total · seed 42 · deterministic
 
-All results include Wilson score 95% confidence intervals and per-law error statistics.
+| Rank | Model | Provider | Score | 95% CI | Worst Law | Worst Trap |
+|------|-------|----------|-------|--------|-----------|------------|
+| 1 | **Gemini 3.1 flash Img** | Google | **83.5%** (142/170) | 77.1 – 88.5% | Bernoulli's Equation | pressure_unit_confusion |
+| 2 | **Gemini 3.1 flash Lite** | Google | **72.9%** (124/170) | 65.9 – 79.1% | Gravitational Force | pressure_unit_confusion |
+| 3 | **Claude Sonnet 4.6** | Anthropic | **64.7%** (110/170) | 57.2 – 71.6% | Coulomb's Law | pressure_unit_confusion |
+| 4 | **Claude Opus 4.6** | Anthropic | **62.4%** (106/170) | 54.8 – 69.3% | Coulomb's Law | pressure_unit_confusion |
+| 5 | **GPT-5.4 Mini** | OpenAI | **58.2%** (99/170) | 50.6 – 65.5% | Ideal Gas Law | pressure_unit_confusion |
+| 6 | **GPT-5.4 Nano** | OpenAI | **25.3%** (43/170) | 19.2 – 32.4% | KCL | missing_branch |
+
+Full results (v0.5 with 21 models + v0.6 with uncertainty) on **[🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker)** and **[Kaggle](https://www.kaggle.com/datasets/dianelago/llm-physics-law-breaker-benchmark-results)**.
+
+### Key Findings (v0.6)
+
+- **Google Gemini leads** — Gemini 3.1 flash image-preview takes #1 at 83.5%, outperforming all Claude and GPT models
+- **Anchoring bias is deadly** — every model struggles when questions contain misleading "colleague says X" anchors
+- **Unit confusion is universal** — `pressure_unit_confusion` is the worst trap for 5 out of 6 models
+- **Chain laws expose gaps** — multi-step reasoning (e.g., Force → KE, Spring → Speed) separates strong from weak models
+- **Small models collapse** — GPT-5.4 Nano (25.3%) fails on nearly 3 out of 4 adversarial questions
+- **Coulomb's Law trips Claude** — both Opus and Sonnet score 0% on Coulomb's Law (r vs r² confusion)
 
 Submit your own results:
 
