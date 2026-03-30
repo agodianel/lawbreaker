@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from lawbreaker.connectors.base import BaseConnector
 from lawbreaker.core.question import Question
 from lawbreaker.core.result import BenchmarkReport, QuestionResult
+from lawbreaker.core.uncertainty import compute_relative_error
 from lawbreaker.core.verifier import PhysicsVerifier
 from lawbreaker.laws import ALL_LAWS, LAW_REGISTRY
 from lawbreaker.laws.base import BaseLaw
@@ -164,9 +165,13 @@ class BenchmarkRunner:
             )
         except Exception:
             passed = False
+
+        rel_err = compute_relative_error(extracted, question.correct_answer)
+
         return QuestionResult(
             question=question,
             llm_response=llm_response,
             extracted_answer=extracted,
             passed=passed,
+            relative_error=rel_err,
         )

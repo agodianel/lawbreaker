@@ -37,8 +37,8 @@ class GeminiConnector(BaseConnector):
 
         Args:
             api_key: Optional API key; falls back to ``GEMINI_API_KEY``.
-            recent_only: If *True* (default), keep only the two most recent
-                major versions (e.g. 3.0 and 3.1).  Set to *False* to
+            recent_only: If *True* (default), keep only the most recent
+                major version (e.g. 3.1).  Set to *False* to
                 return every Gemini model.
 
         Returns:
@@ -72,7 +72,7 @@ class GeminiConnector(BaseConnector):
                 if match:
                     versions.add(match.group(1))
             if versions:
-                top2 = sorted(versions, key=lambda v: tuple(map(int, v.split("."))), reverse=True)[:2]
+                top2 = sorted(versions, key=lambda v: tuple(map(int, v.split("."))), reverse=True)[:1]
                 models = [n for n in models if any(f"gemini-{v}" in n for v in top2)]
 
         return sorted(models)

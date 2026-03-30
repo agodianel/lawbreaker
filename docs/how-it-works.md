@@ -2,12 +2,12 @@
 
 ## Architecture
 
-LawBreaker is a physics adversarial benchmark that **generates** trap questions
-and **grades** answers using symbolic math — no LLM-as-judge required.
+LawBreaker is an adversarial evaluation framework that **generates** trap
+questions and **grades** answers using symbolic math — no LLM-as-judge required.
 
 ```
 ┌──────────────┐     ┌───────────────┐     ┌──────────────┐
-│  28 Physics  │────▶│   Benchmark   │────▶│   LLM API    │
+│  34 Physics  │────▶│   Benchmark   │────▶│   LLM API    │
 │    Laws      │     │    Runner     │     │  Connector   │
 └──────────────┘     └───────┬───────┘     └──────┬───────┘
                              │                     │
@@ -15,6 +15,11 @@ and **grades** answers using symbolic math — no LLM-as-judge required.
                      │   Symbolic    │◀────│   Model      │
                      │   Verifier    │     │   Response   │
                      └───────┬───────┘     └──────────────┘
+                             │
+                     ┌───────▼───────┐
+                     │  Uncertainty  │
+                     │   Scoring     │
+                     └───────┬───────┘
                              │
                      ┌───────▼───────┐
                      │   Report &    │
@@ -49,7 +54,16 @@ The orchestrator that:
 - Generates N questions across all laws
 - Sends each question to the LLM connector
 - Grades responses via the verifier
+- Computes relative error for each question
 - Produces a structured report with per-law and per-trap breakdowns
+
+### Uncertainty (`lawbreaker/core/uncertainty.py`)
+Statistical scoring layer that:
+- Computes **Wilson score confidence intervals** for pass-rate estimates
+- Aggregates **relative error statistics** (mean, median, max, std) per law
+- Provides a **two-proportion z-test** for regression detection between runs
+- Applies **Benjamini-Hochberg FDR correction** for multiple comparisons across laws
+- Uses `math.erf` for the normal CDF — no scipy dependency
 
 ## Design Principles
 
@@ -57,4 +71,5 @@ The orchestrator that:
 2. **Seed-based reproducibility** — Same seed = same questions for fair comparisons.
 3. **Symbolic grading** — No subjective evaluation. Math is the judge.
 4. **Adversarial by design** — Every question has a trap that exploits known LLM weaknesses.
-5. **Zero GPU** — Runs on any machine, grades without GPU.
+5. **Statistical rigor** — Confidence intervals and FDR-corrected regression tests included by default.
+6. **Zero GPU** — Runs on any machine, grades without GPU.

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-31
+
+### Added
+- **Uncertainty scoring module** (`lawbreaker/core/uncertainty.py`) — statistical rigor for benchmark results:
+  - **Wilson score confidence intervals** for per-law, per-trap, and overall pass rates (95% CI by default)
+  - **Relative error tracking** — each question now records how far the extracted answer was from the correct value
+  - **Error statistics** per law (mean, median, max, std of relative errors)
+  - No external dependencies — uses `math.erf` for normal CDF (no scipy required)
+- **`lawbreaker compare` CLI command** — regression detection between two benchmark runs:
+  - Two-proportion z-test per law
+  - **Benjamini-Hochberg FDR correction** for multiple comparisons (34 simultaneous tests)
+  - Rich table output with Δ Score, p-values, and REGRESSION/✓ status
+- **Comparison graph generator** (`examples/generate_graphs.py`) — 12 publication-quality charts:
+  - Overall leaderboard, per-law heatmap, trap radar chart, provider comparison
+  - Confidence interval plots, mean relative error, best/worst laws per model
+  - Single-step vs multi-step chain performance, score distribution violin plots
+- **35 new tests** for uncertainty module (`tests/test_uncertainty.py`) — total: 229 tests
+
+### Changed
+- **`BenchmarkReport`** now includes `per_law_ci`, `per_trap_ci`, and `per_law_error_stats` fields in JSON output
+- **`QuestionResult`** now includes `relative_error` field
+- **CLI `run` output** tables now show 95% CI and Mean Error columns
+- **Leaderboard table** shows confidence intervals when available
+- **Gemini connector** `discover_models()` now returns only the latest major version (3.1)
+- **Results directories** renamed to versioned format: `results_v0.5/` (pre-uncertainty), `results_v0.6/` (with CI + error stats)
+- **README** — removed inline results table, replaced with links to HuggingFace/Kaggle leaderboards
+- **Rebranded** project from "benchmark" to "adversarial evaluation framework for LLMs & AI agents" across README, pyproject.toml, docs, and citation
+
 ## [0.5.0] - 2026-03-29
 
 ### Fixed

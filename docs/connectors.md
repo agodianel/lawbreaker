@@ -1,7 +1,8 @@
 # LLM Connectors
 
-LawBreaker supports 4 LLM connectors out of the box. All connectors implement
-the `BaseConnector` interface.
+LawBreaker supports 5 LLM connectors out of the box. All connectors implement
+the `BaseConnector` interface and provide a `discover_models()` classmethod for
+auto-discovery.
 
 ## OpenAI
 
@@ -28,6 +29,21 @@ connector = AnthropicConnector(model="claude-sonnet-4-20250514")
 
 **Supported models**: Any model available via the Anthropic Messages API
 (claude-sonnet-4-20250514, claude-3-haiku, etc.).
+
+## Gemini
+
+```python
+from lawbreaker.connectors.gemini_connector import GeminiConnector
+
+connector = GeminiConnector(model="gemini-3.1-flash-image-preview")
+```
+
+**Requirements**: Set `GEMINI_API_KEY` environment variable.
+
+**Supported models**: Any model available via the Google Generative AI API.
+
+**Auto-discovery**: `GeminiConnector.discover_models(recent_only=True)` returns
+models from the latest major version only (e.g., 3.1).
 
 ## HuggingFace
 
@@ -79,3 +95,17 @@ connector = MyConnector(model="my-model")
 runner = BenchmarkRunner(connector=connector, n_questions=10, seed=42)
 report = runner.run()
 ```
+
+## Model Auto-Discovery
+
+All connectors support auto-discovery of available models:
+
+```python
+OpenAIConnector.discover_models(limit=2)        # Latest 2 GPT chat models
+AnthropicConnector.discover_models(limit=2)      # Latest 2 Claude models
+GeminiConnector.discover_models(recent_only=True) # Latest version only
+HuggingFaceConnector.discover_models()            # All warm inference models
+```
+
+The example scripts in `examples/` use auto-discovery by default — just set your
+API key and run.

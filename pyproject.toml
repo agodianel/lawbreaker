@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lawbreaker"
 version = "0.1.0"
-description = "Physics Adversarial Benchmark for LLMs — catches models breaking physical laws"
+description = "Adversarial evaluation framework for LLMs & AI agents — grounded in physics"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

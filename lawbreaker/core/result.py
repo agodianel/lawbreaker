@@ -15,6 +15,11 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from lawbreaker.core.question import Question
+from lawbreaker.core.uncertainty import (
+    compute_error_stats,
+    compute_relative_error,
+    wilson_ci,
+)
 
 
 @dataclass
@@ -27,6 +32,7 @@ class QuestionResult:
         extracted_answer: Numeric value parsed from llm_response, or None.
         passed: Whether the LLM answered correctly within tolerance.
         error: If an API or parsing error occurred, the message.
+        relative_error: |extracted - correct| / |correct|, or None.
     """
 
     question: Question
@@ -34,6 +40,7 @@ class QuestionResult:
     extracted_answer: Optional[float] = None
     passed: bool = False
     error: Optional[str] = None
+    relative_error: Optional[float] = None
 
     @property
     def status(self) -> str:
@@ -51,6 +58,7 @@ class QuestionResult:
             "passed": self.passed,
             "error": self.error,
             "status": self.status,
+            "relative_error": self.relative_error,
         }
 
 
@@ -82,6 +90,11 @@ class BenchmarkReport:
     per_trap_scores: dict[str, float] = field(default_factory=dict)
     worst_law: str = ""
     worst_trap: str = ""
+    per_law_ci: dict[str, tuple[float, float]] = field(default_factory=dict)
+    per_trap_ci: dict[str, tuple[float, float]] = field(default_factory=dict)
+    per_law_error_stats: dict[str, dict[str, Optional[float]]] = field(
+        default_factory=dict
+    )
     questions: list[QuestionResult] = field(default_factory=list)
 
     @classmethod
@@ -124,6 +137,25 @@ class BenchmarkReport:
         worst_trap = min(per_trap, key=per_trap.get) if per_trap else ""
         best_law = max(per_law, key=per_law.get) if per_law else ""
 
+        # Confidence intervals
+        per_law_ci = {
+            law: wilson_ci(law_passed[law], law_totals[law])
+            for law in law_totals
+        }
+        per_trap_ci = {
+            trap: wilson_ci(trap_passed[trap], trap_totals[trap])
+            for trap in trap_totals
+        }
+
+        # Per-law error statistics
+        law_errors: dict[str, list[float]] = defaultdict(list)
+        for r in results:
+            if r.relative_error is not None:
+                law_errors[r.question.law].append(r.relative_error)
+        per_law_error_stats = {
+            law: compute_error_stats(errs) for law, errs in law_errors.items()
+        }
+
         report = cls(
             model_name=model_name,
             total_questions=total,
@@ -133,6 +165,9 @@ class BenchmarkReport:
             per_trap_scores=per_trap,
             worst_law=worst_law,
             worst_trap=worst_trap,
+            per_law_ci=per_law_ci,
+            per_trap_ci=per_trap_ci,
+            per_law_error_stats=per_law_error_stats,
             questions=results,
         )
         report._best_law = best_law
@@ -150,6 +185,9 @@ class BenchmarkReport:
             "per_trap_scores": self.per_trap_scores,
             "worst_law": self.worst_law,
             "worst_trap": self.worst_trap,
+            "per_law_ci": {k: list(v) for k, v in self.per_law_ci.items()},
+            "per_trap_ci": {k: list(v) for k, v in self.per_trap_ci.items()},
+            "per_law_error_stats": self.per_law_error_stats,
             "questions": [q.to_dict() for q in self.questions],
         }
         return json.dumps(data, indent=2)
@@ -164,25 +202,32 @@ class BenchmarkReport:
             "",
             "## Per-Law Scores",
             "",
-            "| Law | Score |",
-            "| --- | ----- |",
+            "| Law | Score | 95% CI | Mean Error |",
+            "| --- | ----- | ------ | ---------- |",
         ]
         for law, score in sorted(
             self.per_law_scores.items(), key=lambda x: x[1], reverse=True
         ):
-            lines.append(f"| {law} | {score:.1%} |")
+            ci = self.per_law_ci.get(law)
+            ci_str = f"[{ci[0]:.0%}, {ci[1]:.0%}]" if ci else "—"
+            err_stats = self.per_law_error_stats.get(law, {})
+            mean_err = err_stats.get("mean")
+            err_str = f"{mean_err:.4f}" if mean_err is not None else "—"
+            lines.append(f"| {law} | {score:.1%} | {ci_str} | {err_str} |")
 
         lines += [
             "",
             "## Per-Trap Scores",
             "",
-            "| Trap Type | Score |",
-            "| --------- | ----- |",
+            "| Trap Type | Score | 95% CI |",
+            "| --------- | ----- | ------ |",
         ]
         for trap, score in sorted(
             self.per_trap_scores.items(), key=lambda x: x[1], reverse=True
         ):
-            lines.append(f"| {trap} | {score:.1%} |")
+            ci = self.per_trap_ci.get(trap)
+            ci_str = f"[{ci[0]:.0%}, {ci[1]:.0%}]" if ci else "—"
+            lines.append(f"| {trap} | {score:.1%} | {ci_str} |")
 
         return "\n".join(lines)
 

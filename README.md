@@ -1,7 +1,7 @@
 <p align="center">
   <img src="assets/lawbreaker_logo.png" width="400" alt="LawBreaker Logo">
   <h1 align="center">⚖️ LawBreaker</h1>
-  <p align="center"><strong>The benchmark that catches LLMs breaking physics.</strong></p>
+  <p align="center"><strong>An adversarial evaluation framework for LLMs &amp; AI agents — grounded in physics.</strong></p>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 LLMs are confidently wrong about physics. They fall for anchoring bias, mix up units, forget the ½ in kinetic energy, and use Celsius instead of Kelvin.
 
-**LawBreaker** generates adversarial physics questions that exploit these weaknesses, then grades answers using **symbolic math** (sympy + pint) — no LLM-as-judge, no human review, zero GPU required.
+**LawBreaker** is an evaluation framework that generates adversarial physics questions exploiting these weaknesses, then grades answers using **symbolic math** (sympy + pint) — no LLM-as-judge, no human review, zero GPU required.
 
 ## 🪤 How It Works
 
@@ -40,7 +40,7 @@ LLMs are confidently wrong about physics. They fall for anchoring bias, mix up u
    A: "20V" ← CORRECT (ignored the anchor)
 ```
 
-Unlike static benchmarks (UGPhysics, GPQA), LawBreaker:
+Unlike static benchmarks (UGPhysics, GPQA), the LawBreaker framework:
 
 1. **GENERATES** questions procedurally — infinite adversarial variations
 2. Uses **SYMBOLIC MATH** for grading — not LLM-as-judge
@@ -170,6 +170,9 @@ lawbreaker run --model meta-llama/Llama-3.1-8B-Instruct --connector huggingface 
 # Run with local Ollama
 lawbreaker run --model llama3.2 --connector ollama --questions 5
 
+# Compare two runs for regressions (Benjamini-Hochberg corrected)
+lawbreaker compare results/v1/model.json results/v2/model.json
+
 # Discover available HuggingFace models
 lawbreaker models
 
@@ -189,66 +192,57 @@ lawbreaker laws
 lawbreaker example --law ohm --trap anchoring_bias
 ```
 
-### Results Directory Structure
+## 📊 Uncertainty Scoring & Regression Detection
 
-Results are organized by connector/provider:
+Every benchmark run now includes **statistical uncertainty** out of the box:
+
+- **Wilson score 95% confidence intervals** on pass rates (per-law, per-trap, and overall)
+- **Relative error statistics** (mean, median, max, std) for each law — quantifies *how wrong* a model is, not just pass/fail
+- **Regression detection** via `lawbreaker compare` — two-proportion z-test across all 34 laws with **Benjamini-Hochberg FDR correction** for multiple comparisons
+
+```bash
+# Compare baseline vs candidate — flags per-law regressions
+lawbreaker compare results/baseline.json results/candidate.json --alpha 0.05
+```
 
 ```
-examples/results/
-├── openai/
-│   ├── gpt-5.4-mini.json
-│   └── gpt-5.4-nano.json
-├── anthropic/
-│   ├── claude-opus-4-6.json
-│   └── claude-sonnet-4-6.json
-├── gemini/
-│   ├── gemini-3.1-flash-image-preview.json
-│   └── ...
-├── huggingface/
-│   ├── Qwen__Qwen3-235B-A22B-Instruct-2507.json
-│   ├── meta-llama__Llama-3.3-70B-Instruct.json
-│   └── ...
-└── ollama/
-    └── llama3.2.json
+┌──────────────────────┬───────────┬───────────┬───────────┬──────────┬────────┐
+│ Law                  │ Baseline  │ Candidate │ Δ Score   │ p-value  │ Status │
+├──────────────────────┼───────────┼───────────┼───────────┼──────────┼────────┤
+│ Ohm's Law            │ 80.0%     │ 40.0%     │ -40.0%    │ 0.0412   │ REGR.  │
+│ Kinetic Energy       │ 60.0%     │ 80.0%     │ +20.0%    │ 0.3271   │ ✓      │
+│ ...                  │           │           │           │          │        │
+└──────────────────────┴───────────┴───────────┴───────────┴──────────┴────────┘
+```
+
+No external dependencies required — uses `math.erf` for the normal CDF (no scipy).
+
+### Results Directory Structure
+
+Results are organized by version and provider:
+
+```
+examples/
+├── results_v0.5/              # Pre-uncertainty scoring results (21 models)
+│   ├── openai/
+│   ├── anthropic/
+│   ├── gemini/
+│   └── huggingface/
+├── results_v0.6/              # With confidence intervals & error stats (6 models)
+│   ├── openai/
+│   ├── anthropic/
+│   └── gemini/
+└── graphs/                    # Comparison visualizations
+    ├── 01_overall_leaderboard.png
+    ├── 02_per_law_heatmap.png
+    └── ...
 ```
 
 ## 🏆 Leaderboard
 
-Benchmarked across **21 models** from 4 providers (5 questions per law × 34 laws = 170 questions each):
+Live results on **[🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker)** and **[Kaggle](https://www.kaggle.com/datasets/dianelago/llm-physics-law-breaker-benchmark-results)**.
 
-| # | Model | Provider | Score | Passed | Worst Law | Worst Trap |
-|---|-------|----------|-------|--------|-----------|------------|
-| 1 | **gemini-3.1-flash-image-preview** | Google | **83.5%** | 142/170 | Bernoulli's Equation | pressure_unit_confusion |
-| 2 | **gemini-3.1-flash-lite-preview** | Google | **72.9%** | 124/170 | Gravitational Force | pressure_unit_confusion |
-| 3 | **claude-sonnet-4-6** | Anthropic | **65.3%** | 111/170 | Coulomb's Law | pressure_unit_confusion |
-| 4 | **gemini-2.5-flash-image** | Google | **58.8%** | 100/170 | Coulomb's Law | wrong_k_constant |
-| 5 | **gpt-5.4-mini** | OpenAI | **58.8%** | 100/170 | Coulomb's Law | pressure_unit_confusion |
-| 6 | **claude-opus-4-6** | Anthropic | **54.7%** | 93/170 | Coulomb's Law | pressure_unit_confusion |
-| 7 | **Kimi-K2-Instruct-0905** | HuggingFace | **54.1%** | 92/170 | Gravitational Force | pressure_unit_confusion |
-| 8 | **Qwen3-235B-A22B-Instruct-2507** | HuggingFace | **51.2%** | 87/170 | Ideal Gas Law | pressure_unit_confusion |
-| 9 | **Qwen3-Next-80B-A3B-Instruct** | HuggingFace | **44.1%** | 75/170 | Kirchhoff's Current Law | missing_branch |
-| 10 | **gemini-2.5-flash-lite** | Google | **31.2%** | 53/170 | Kirchhoff's Current Law | missing_branch |
-| 11 | **Qwen2.5-72B-Instruct** | HuggingFace | **30.0%** | 51/170 | Kirchhoff's Current Law | missing_branch |
-| 12 | **gpt-5.4-nano** | OpenAI | **27.6%** | 47/170 | Kirchhoff's Current Law | missing_branch |
-| 13 | **rnj-1-instruct** | HuggingFace | **25.9%** | 43/166 | Kirchhoff's Current Law | missing_branch |
-| 14 | **gemini-2.5-flash** | Google | **23.5%** | 40/170 | Coulomb's Law | missing_branch |
-| 15 | **Qwen3-4B-Instruct-2507** | HuggingFace | **21.8%** | 37/170 | Ideal Gas Law | missing_branch |
-| 16 | **gemini-3.1-pro-preview** | Google | **21.2%** | 36/170 | Ohm's Law | reversed_question |
-| 17 | **Llama-3.3-70B-Instruct** | HuggingFace | **20.6%** | 35/170 | Kirchhoff's Current Law | missing_branch |
-| 18 | **Olmo-3.1-32B-Instruct** | HuggingFace | **20.0%** | 34/170 | Kirchhoff's Current Law | missing_branch |
-| 19 | **Llama-3.1-8B-Instruct** | HuggingFace | **7.1%** | 12/170 | Kirchhoff's Current Law | reversed_question |
-| 20 | **Olmo-3-7B-Instruct** | HuggingFace | **5.9%** | 10/170 | Kirchhoff's Current Law | missing_branch |
-| 21 | **Llama-3.2-1B-Instruct** | HuggingFace | **1.2%** | 2/170 | Kirchhoff's Current Law | unit_confusion |
-
-### Key Findings
-
-- **No model exceeds 85%** — adversarial traps remain effective even for frontier models
-- **Coulomb's Law** and **Kirchhoff's Current Law** are the hardest laws across all models
-- **pressure_unit_confusion** (atm vs Pa) and **missing_branch** (forgetting a current path) are the deadliest traps
-- **Model size isn't decisive** — Kimi-K2 matches claude-opus-4 despite being smaller
-- **Below ~8B parameters, models collapse** — all scoring under 10%
-
-View the full leaderboard on [🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker).
+All results include Wilson score 95% confidence intervals and per-law error statistics.
 
 Submit your own results:
 
@@ -329,7 +323,7 @@ lawbreaker/
 ├── pyproject.toml                   # Project configuration
 ├── lawbreaker/
 │   ├── __init__.py
-│   ├── cli.py                       # Click CLI (run, run-all, models, leaderboard, laws, example)
+│   ├── cli.py                       # Click CLI (run, run-all, compare, models, leaderboard, laws, example)
 │   ├── runner.py                    # Benchmark orchestrator
 │   ├── leaderboard.py              # Leaderboard management
 │   ├── connectors/                  # LLM API connectors
@@ -341,8 +335,9 @@ lawbreaker/
 │   │   └── ollama_connector.py      #   Local Ollama models
 │   ├── core/                        # Core abstractions
 │   │   ├── question.py              #   Question dataclass
-│   │   ├── result.py                #   Result & report classes
-│   │   └── verifier.py              #   Symbolic math grader
+│   │   ├── result.py                #   Result & report classes (with CI + error stats)
+│   │   ├── verifier.py              #   Symbolic math grader
+│   │   └── uncertainty.py           #   Wilson CI, error aggregation, z-test, BH correction
 │   └── laws/                        # 34 physics law implementations
 │       ├── base.py                  #   Abstract BaseLaw class
 │       ├── ohm.py                   #   Ohm's Law
@@ -379,8 +374,9 @@ lawbreaker/
 │       ├── chain_ohm_kvl.py         #   🔗 Ohm → Kirchhoff Voltage
 │       ├── chain_spring_launch.py   #   🔗 Spring → Speed
 │       └── chain_heat_height.py     #   🔗 Heat → Height
-├── tests/                           # 194 pytest tests
+├── tests/                           # 229 pytest tests
 │   ├── test_verifier.py
+│   ├── test_uncertainty.py          #   Uncertainty module tests
 │   ├── test_connectors/
 │   └── test_laws/
 ├── examples/                        # Usage examples (all use auto-discovery)
@@ -389,7 +385,8 @@ lawbreaker/
 │   ├── run_gemini.py                #   Auto-discovers latest Gemini models
 │   ├── run_huggingface.py           #   Auto-discovers all HF inference models
 │   ├── run_ollama.py                #   Benchmarks local Ollama models
-│   └── push_results.py              #   Batch upload results to HF dataset
+│   ├── push_results.py              #   Batch upload results to HF dataset
+│   └── generate_graphs.py           #   Generates comparison visualizations
 └── .github/
     ├── workflows/ci.yml             # CI pipeline (Python 3.10/3.11/3.12/3.13)
     ├── ISSUE_TEMPLATE/              # Bug report & feature request templates
@@ -458,7 +455,7 @@ pip install -e ".[dev]"
 pytest -v
 ```
 
-All 194 tests run without any hardware or API keys.
+All 229 tests run without any hardware or API keys.
 
 ## 🌟 Acknowledgments
 
@@ -468,7 +465,7 @@ Built with the assistance of [Claude](https://claude.ai) by Anthropic.
 
 ```bibtex
 @misc{lawbreaker2026,
-  title={LawBreaker: An Adversarial Physics Benchmark for Large Language Models},
+  title={LawBreaker: An Adversarial Evaluation Framework for LLMs and AI Agents},
   author={Dianel Ago},
   year={2026},
   url={https://github.com/agodianel/lawbreaker},
@@ -482,4 +479,4 @@ Built with the assistance of [Claude](https://claude.ai) by Anthropic.
 
 ---
 
-<p align="center"><strong>LawBreaker</strong> — <em>Structure over magic. Symbolic math over vibes. 34 laws and counting.</em></p>
+<p align="center"><strong>LawBreaker</strong> — <em>Adversarial evaluation, grounded in physics. 34 laws and counting.</em></p>

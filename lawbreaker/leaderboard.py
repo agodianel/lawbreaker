@@ -11,6 +11,7 @@ import re
 from datetime import datetime, timezone
 
 from lawbreaker.core.result import BenchmarkReport
+from lawbreaker.core.uncertainty import wilson_ci
 
 
 class Leaderboard:
@@ -87,6 +88,17 @@ class Leaderboard:
                     per_trap_scores=data.get("per_trap_scores", {}),
                     worst_law=data.get("worst_law", ""),
                     worst_trap=data.get("worst_trap", ""),
+                    per_law_ci={
+                        k: tuple(v) for k, v in
+                        data.get("per_law_ci", {}).items()
+                    },
+                    per_trap_ci={
+                        k: tuple(v) for k, v in
+                        data.get("per_trap_ci", {}).items()
+                    },
+                    per_law_error_stats=data.get(
+                        "per_law_error_stats", {}
+                    ),
                 )
                 reports.append(report)
             return reports
@@ -126,6 +138,17 @@ class Leaderboard:
                     per_trap_scores=data.get("per_trap_scores", {}),
                     worst_law=data.get("worst_law", ""),
                     worst_trap=data.get("worst_trap", ""),
+                    per_law_ci={
+                        k: tuple(v) for k, v in
+                        data.get("per_law_ci", {}).items()
+                    },
+                    per_trap_ci={
+                        k: tuple(v) for k, v in
+                        data.get("per_trap_ci", {}).items()
+                    },
+                    per_law_error_stats=data.get(
+                        "per_law_error_stats", {}
+                    ),
                 ))
             except (json.JSONDecodeError, OSError):
                 continue
@@ -144,12 +167,14 @@ class Leaderboard:
         lines = [
             "# 🏆 LawBreaker Leaderboard",
             "",
-            "| Rank | Model | Score | Questions | Worst Law | Worst Trap |",
-            "| ---- | ----- | ----- | --------- | --------- | ---------- |",
+            "| Rank | Model | Score | 95% CI | Questions | Worst Law | Worst Trap |",
+            "| ---- | ----- | ----- | ------ | --------- | --------- | ---------- |",
         ]
         for i, r in enumerate(sorted_reports, 1):
+            ci = wilson_ci(r.total_passed, r.total_questions)
+            ci_str = f"[{ci[0]:.0%}, {ci[1]:.0%}]"
             lines.append(
                 f"| {i} | {r.model_name} | {r.overall_score:.1%} | "
-                f"{r.total_questions} | {r.worst_law} | {r.worst_trap} |"
+                f"{ci_str} | {r.total_questions} | {r.worst_law} | {r.worst_trap} |"
             )
         return "\n".join(lines)

@@ -1,9 +1,7 @@
-"""
-Example: Run LawBreaker benchmark against recent Google Gemini models.
+"""Example: Run LawBreaker benchmark against the 2 most recent Gemini models.
 
-Discovers the two most recent Gemini model versions via the API
-and benchmarks each one.  If a model returns an API error on its
-first question, it is skipped immediately to save quota.
+Auto-discovers the latest Gemini model versions via the API,
+probes each, and benchmarks all that respond.
 
 Usage:
     export GEMINI_API_KEY="AIza..."
@@ -20,39 +18,50 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(_SCRIPT_DIR, "results", "gemini")
 N_QUESTIONS = 5
 SEED = 42
-DELAY = 1.0
-DELAY_BETWEEN_MODELS = 5  # seconds between models to avoid rate limits
+DELAY = 2.5
 
 
 def _probe_model(model: str) -> bool:
-    """Send a single trivial question to check if the model responds."""
+    """Send a trivial question to check if the model responds."""
     try:
         connector = GeminiConnector(model=model)
         connector.query("What is 1+1?")
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"  !! {model} probe failed: {exc}")
         return False
 
 
 def main():
-    """Discover recent Gemini models and benchmark each one."""
-    print("Discovering available Gemini models (recent versions only)...")
-    models = GeminiConnector.discover_models(recent_only=True)
-    print(f"Found {len(models)} model(s): {', '.join(models)}\n")
-
+    """Discover and benchmark the 2 most recent Gemini models."""
     os.makedirs(OUT_DIR, exist_ok=True)
+
+    print("Discovering most recent Gemini models...")
+    candidates = GeminiConnector.discover_models(recent_only=True)
+    if not candidates:
+        print("No models found. Check your GEMINI_API_KEY.")
+        return
+    print(f"Found {len(candidates)} candidate(s), probing for working models...\n")
+
+    # Probe all candidates and keep the ones that respond
+    models: list[str] = []
+    for model in candidates:
+        print(f"  Probing {model} ...")
+        if _probe_model(model):
+            print(f"  ✓ {model} is accessible")
+            models.append(model)
+        print()
+
+    if not models:
+        print("\nNo accessible models found.")
+        return
+    print(f"\n{len(models)} working model(s): {', '.join(models)}\n")
 
     for i, model in enumerate(models):
         safe_name = model.replace("/", "__")
         out_path = os.path.join(OUT_DIR, f"{safe_name}.json")
 
-        # Quick probe — skip immediately if the model errors out
-        print(f"[{i + 1}/{len(models)}] Probing {model} ...")
-        if not _probe_model(model):
-            print(f"  !! {model} returned an error, skipping.\n")
-            continue
-
-        print(f"  Benchmarking {model} ...")
+        print(f"[{i + 1}/{len(models)}] Benchmarking {model} ...")
         try:
             connector = GeminiConnector(model=model)
             runner = BenchmarkRunner(
@@ -62,6 +71,7 @@ def main():
             report = runner.run()
 
             print(report.summary())
+            print(report.to_markdown_table())
 
             with open(out_path, "w") as f:
                 f.write(report.to_json())
@@ -70,7 +80,7 @@ def main():
             print(f"  !! Failed: {exc}\n")
 
         if i < len(models) - 1:
-            time.sleep(DELAY_BETWEEN_MODELS)
+            time.sleep(2)
 
     print("Done.")
 

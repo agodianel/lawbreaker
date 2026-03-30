@@ -60,22 +60,37 @@ def run(model, connector, questions, output, seed, laws, delay, push):
     table = Table(title="📊 Results by Law", show_lines=True)
     table.add_column("Law", style="cyan")
     table.add_column("Score", justify="right")
+    table.add_column("95% CI", justify="right")
+    table.add_column("Mean Err", justify="right")
     for law_name, score in sorted(
         report.per_law_scores.items(), key=lambda x: x[1], reverse=True
     ):
         color = "green" if score >= 0.7 else "yellow" if score >= 0.4 else "red"
-        table.add_row(law_name, f"[{color}]{score:.1%}[/{color}]")
+        ci = report.per_law_ci.get(law_name)
+        ci_str = f"[{ci[0]:.0%}, {ci[1]:.0%}]" if ci else "—"
+        err_stats = report.per_law_error_stats.get(law_name, {})
+        mean_err = err_stats.get("mean")
+        err_str = f"{mean_err:.4f}" if mean_err is not None else "—"
+        table.add_row(
+            law_name,
+            f"[{color}]{score:.1%}[/{color}]",
+            ci_str,
+            err_str,
+        )
     console.print(table)
 
     # Trap table
     trap_table = Table(title="🪤 Results by Trap Type", show_lines=True)
     trap_table.add_column("Trap", style="magenta")
     trap_table.add_column("Score", justify="right")
+    trap_table.add_column("95% CI", justify="right")
     for trap, score in sorted(
         report.per_trap_scores.items(), key=lambda x: x[1], reverse=True
     ):
         color = "green" if score >= 0.7 else "yellow" if score >= 0.4 else "red"
-        trap_table.add_row(trap, f"[{color}]{score:.1%}[/{color}]")
+        ci = report.per_trap_ci.get(trap)
+        ci_str = f"[{ci[0]:.0%}, {ci[1]:.0%}]" if ci else "—"
+        trap_table.add_row(trap, f"[{color}]{score:.1%}[/{color}]", ci_str)
     console.print(trap_table)
 
     console.print(f"\n[bold]{report.summary()}[/bold]\n")
@@ -294,6 +309,134 @@ def example(law, trap, difficulty, seed):
     console.print(f"\n[white]{q.question_text}[/white]")
     console.print(f"\n[green]✅ Correct answer:[/green] {q.correct_answer} {q.correct_unit}")
     console.print(f"[yellow]💡 Explanation:[/yellow] {q.explanation}\n")
+
+
+@main.command()
+@click.argument("baseline", type=click.Path(exists=True))
+@click.argument("candidate", type=click.Path(exists=True))
+@click.option("--alpha", default=0.05, type=float, help="FDR significance level (default 0.05)")
+def compare(baseline, candidate, alpha):
+    """Compare two benchmark result JSON files and detect regressions.
+
+    Uses a two-proportion z-test per law with Benjamini-Hochberg FDR
+    correction to control for multiple comparisons.
+    """
+    from collections import defaultdict
+
+    from lawbreaker.core.uncertainty import benjamini_hochberg, two_proportion_z_test
+
+    # Load both reports
+    with open(baseline) as f:
+        base_data = json.load(f)
+    with open(candidate) as f:
+        cand_data = json.load(f)
+
+    console.print(f"\n[bold cyan]🔬 Regression Analysis[/bold cyan]")
+    console.print(f"   Baseline:  [green]{base_data.get('model_name', baseline)}[/green]")
+    console.print(f"   Candidate: [green]{cand_data.get('model_name', candidate)}[/green]")
+    console.print(f"   FDR α:     {alpha}\n")
+
+    # Extract per-law pass counts from question-level data
+    def _law_counts(data: dict) -> dict[str, tuple[int, int]]:
+        counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+        for q in data.get("questions", []):
+            law = q.get("question", {}).get("law", "")
+            if not law:
+                continue
+            counts[law][1] += 1  # total
+            if q.get("passed", False):
+                counts[law][0] += 1  # passed
+        return {law: (c[0], c[1]) for law, c in counts.items()}
+
+    base_counts = _law_counts(base_data)
+    cand_counts = _law_counts(cand_data)
+
+    all_laws = sorted(set(base_counts.keys()) | set(cand_counts.keys()))
+
+    # Compute p-values for each law
+    p_values: dict[str, float | None] = {}
+    for law in all_laws:
+        k1, n1 = base_counts.get(law, (0, 0))
+        k2, n2 = cand_counts.get(law, (0, 0))
+        p_values[law] = two_proportion_z_test(k1, n1, k2, n2)
+
+    # Apply BH correction
+    bh_results = benjamini_hochberg(p_values, alpha=alpha)
+
+    # Build comparison table
+    table = Table(title="📊 Per-Law Regression Analysis", show_lines=True)
+    table.add_column("Law", style="cyan")
+    table.add_column("Baseline", justify="right")
+    table.add_column("Candidate", justify="right")
+    table.add_column("Δ Score", justify="right")
+    table.add_column("p-value", justify="right")
+    table.add_column("Status", justify="center")
+
+    regression_count = 0
+    for law in all_laws:
+        k1, n1 = base_counts.get(law, (0, 0))
+        k2, n2 = cand_counts.get(law, (0, 0))
+        base_score = k1 / n1 if n1 else 0.0
+        cand_score = k2 / n2 if n2 else 0.0
+        delta = cand_score - base_score
+
+        delta_color = "green" if delta > 0 else "red" if delta < 0 else "white"
+        delta_str = f"[{delta_color}]{delta:+.0%}[/{delta_color}]"
+
+        bh = bh_results.get(law, {})
+        if bh:
+            adj_p = bh["adjusted_p"]
+            p_str = f"{adj_p:.4f}"
+            if bh["significant"]:
+                status = "[red]❌ REGRESSION[/red]"
+                regression_count += 1
+            else:
+                status = "[green]✓[/green]"
+        else:
+            p_str = "—"
+            status = "[dim]n/a[/dim]"
+
+        table.add_row(
+            law,
+            f"{base_score:.0%} ({k1}/{n1})" if n1 else "—",
+            f"{cand_score:.0%} ({k2}/{n2})" if n2 else "—",
+            delta_str,
+            p_str,
+            status,
+        )
+
+    console.print(table)
+
+    # Summary
+    base_overall = base_data.get("overall_score", 0.0)
+    cand_overall = cand_data.get("overall_score", 0.0)
+    overall_delta = cand_overall - base_overall
+    overall_color = "green" if overall_delta >= 0 else "red"
+
+    console.print(
+        f"\n[bold]Overall: {base_overall:.1%} → {cand_overall:.1%} "
+        f"([{overall_color}]{overall_delta:+.1%}[/{overall_color}])[/bold]"
+    )
+
+    if regression_count:
+        console.print(
+            f"[bold red]⚠ {regression_count} law(s) show statistically significant "
+            f"regression (BH-corrected, α={alpha})[/bold red]"
+        )
+    else:
+        console.print(
+            f"[bold green]✓ No statistically significant regressions detected "
+            f"(BH-corrected, α={alpha})[/bold green]"
+        )
+
+    n_laws = len(all_laws)
+    q_per_law = base_data.get("total_questions", 0) // max(n_laws, 1)
+    if q_per_law <= 10:
+        console.print(
+            f"[dim]Note: At n={q_per_law} questions/law, only large regressions "
+            f"(>40pp) are detectable. Use --questions 30+ for sensitive testing.[/dim]"
+        )
+    console.print()
 
 
 def _make_connector(connector_type: str, model: str):
