@@ -14,6 +14,7 @@ import os
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ID = "diago01/llm-physics-law-breaker"
+HF_README = os.path.join(_SCRIPT_DIR, "hf_readme.md")
 
 # Versioned result directories to upload
 RESULT_DIRS = [
@@ -78,6 +79,20 @@ def main():
         print(f"Uploading {label}")
         print(f"{'='*50}")
         total += _upload_dir(api, label, local_dir)
+
+    # Upload the dataset README
+    if os.path.isfile(HF_README):
+        print(f"\n{'='*50}")
+        print("Uploading dataset README")
+        print(f"{'='*50}")
+        api.upload_file(
+            path_or_fileobj=HF_README,
+            path_in_repo="README.md",
+            repo_id=REPO_ID,
+            repo_type="dataset",
+        )
+        print("  hf_readme.md -> README.md ... done")
+        total += 1
 
     print(f"\nUploaded {total} file(s) to {REPO_ID}.")
 
