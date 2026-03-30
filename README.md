@@ -211,26 +211,31 @@ results/
 
 ## 🏆 Leaderboard
 
-Benchmarked across **16 models** from 4 providers (5 questions per law × 34 laws = 170 questions each):
+Benchmarked across **21 models** from 4 providers (5 questions per law × 34 laws = 170 questions each):
 
 | # | Model | Provider | Score | Passed | Worst Law | Worst Trap |
 |---|-------|----------|-------|--------|-----------|------------|
 | 1 | **gemini-3.1-flash-image-preview** | Google | **83.5%** | 142/170 | Bernoulli's Equation | pressure_unit_confusion |
 | 2 | **gemini-3.1-flash-lite-preview** | Google | **72.9%** | 124/170 | Gravitational Force | pressure_unit_confusion |
-| 3 | **claude-sonnet-4-6** | Anthropic | **67.1%** | 114/170 | Coulomb's Law | pressure_unit_confusion |
-| 4 | **claude-opus-4-6** | Anthropic | **62.9%** | 107/170 | Coulomb's Law | pressure_unit_confusion |
-| 5 | **gpt-5.4-mini** | OpenAI | **60.6%** | 103/170 | Coulomb's Law | pressure_unit_confusion |
-| 6 | **gemini-2.5-flash-image** | Google | **58.2%** | 99/170 | Coulomb's Law | celsius_trap |
-| 7 | **gemini-2.5-flash-lite** | Google | **31.2%** | 53/170 | Kirchhoff's Current Law | missing_branch |
-| 8 | **gpt-5.4-nano** | OpenAI | **27.6%** | 47/170 | Kirchhoff's Current Law | missing_branch |
-| 9 | **gemini-2.5-flash** | Google | **24.7%** | 42/170 | Coulomb's Law | missing_branch |
-| 10 | **gemini-3.1-pro-preview** | Google | **24.1%** | 41/170 | Gravitational Force | missing_heat_loss |
-| 11 | **gemini-3.1-pro-preview-customtools** | Google | **23.5%** | 23/98 | Gravitational Force | missing_half |
-| 12 | **Qwen3-4B-Instruct-2507** | HuggingFace | **21.2%** | 36/170 | Ideal Gas Law | missing_branch |
-| 13 | **Qwen2.5-7B-Instruct** | HuggingFace | **10.0%** | 17/170 | Kirchhoff's Current Law | missing_branch |
-| 14 | **Llama-3.1-8B-Instruct** | HuggingFace | **7.6%** | 13/170 | Kirchhoff's Current Law | reversed_question |
-| 15 | **Llama-3.2-1B-Instruct** | HuggingFace | **1.2%** | 2/170 | Kirchhoff's Current Law | unit_confusion |
-| 16 | **DeepSeek-R1** | HuggingFace | **0.0%** | 0/144 | Ohm's Law | unit_confusion |
+| 3 | **claude-sonnet-4-6** | Anthropic | **65.3%** | 111/170 | Coulomb's Law | pressure_unit_confusion |
+| 4 | **gemini-2.5-flash-image** | Google | **58.8%** | 100/170 | Coulomb's Law | wrong_k_constant |
+| 5 | **gpt-5.4-mini** | OpenAI | **58.8%** | 100/170 | Coulomb's Law | pressure_unit_confusion |
+| 6 | **claude-opus-4-6** | Anthropic | **54.7%** | 93/170 | Coulomb's Law | pressure_unit_confusion |
+| 7 | **Kimi-K2-Instruct-0905** | HuggingFace | **54.1%** | 92/170 | Gravitational Force | pressure_unit_confusion |
+| 8 | **Qwen3-235B-A22B-Instruct-2507** | HuggingFace | **51.2%** | 87/170 | Ideal Gas Law | pressure_unit_confusion |
+| 9 | **Qwen3-Next-80B-A3B-Instruct** | HuggingFace | **44.1%** | 75/170 | Kirchhoff's Current Law | missing_branch |
+| 10 | **gemini-2.5-flash-lite** | Google | **31.2%** | 53/170 | Kirchhoff's Current Law | missing_branch |
+| 11 | **Qwen2.5-72B-Instruct** | HuggingFace | **30.0%** | 51/170 | Kirchhoff's Current Law | missing_branch |
+| 12 | **gpt-5.4-nano** | OpenAI | **27.6%** | 47/170 | Kirchhoff's Current Law | missing_branch |
+| 13 | **rnj-1-instruct** | HuggingFace | **25.9%** | 43/166 | Kirchhoff's Current Law | missing_branch |
+| 14 | **gemini-2.5-flash** | Google | **23.5%** | 40/170 | Coulomb's Law | missing_branch |
+| 15 | **Qwen3-4B-Instruct-2507** | HuggingFace | **21.8%** | 37/170 | Ideal Gas Law | missing_branch |
+| 16 | **gemini-3.1-pro-preview** | Google | **21.2%** | 36/170 | Ohm's Law | reversed_question |
+| 17 | **Llama-3.3-70B-Instruct** | HuggingFace | **20.6%** | 35/170 | Kirchhoff's Current Law | missing_branch |
+| 18 | **Olmo-3.1-32B-Instruct** | HuggingFace | **20.0%** | 34/170 | Kirchhoff's Current Law | missing_branch |
+| 19 | **Llama-3.1-8B-Instruct** | HuggingFace | **7.1%** | 12/170 | Kirchhoff's Current Law | reversed_question |
+| 20 | **Olmo-3-7B-Instruct** | HuggingFace | **5.9%** | 10/170 | Kirchhoff's Current Law | missing_branch |
+| 21 | **Llama-3.2-1B-Instruct** | HuggingFace | **1.2%** | 2/170 | Kirchhoff's Current Law | unit_confusion |
 
 View the full leaderboard on [🤗 HuggingFace](https://huggingface.co/datasets/diago01/llm-physics-law-breaker).
 

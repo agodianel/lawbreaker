@@ -33,7 +33,6 @@ htmlcov/
 Thumbs.db
 
 # Results & outputs
-results/
 *.json
 !pyproject.toml
 
@@ -42,3 +41,6 @@ results/
 *.whl
 Instructions1.md
 .env
+/examples/results/export_kaggle.py
+/examples/kaggle
+

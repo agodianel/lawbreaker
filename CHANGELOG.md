@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All example scripts updated to save results in connector-specific subdirectories
 - `run-all` command now saves results to `results/<connector>/` subdirectory
 
-## [0.1.0] - 2025-01-01
+## [0.1.0] - 2026-03-28
 
 ### Added
 - **28 physics laws** with adversarial trap questions:
