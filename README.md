@@ -469,7 +469,7 @@ Built with the assistance of [Claude](https://claude.ai) by Anthropic.
 ```bibtex
 @misc{lawbreaker2026,
   title={LawBreaker: An Adversarial Physics Benchmark for Large Language Models},
-  author={Diago, Angel},
+  author={Dianel Ago},
   year={2026},
   url={https://github.com/agodianel/lawbreaker},
   note={HuggingFace Dataset: diago01/llm-physics-law-breaker}
